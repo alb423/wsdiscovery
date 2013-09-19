@@ -7,6 +7,8 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <ifaddrs.h>
+#include <unistd.h>
+
 
 #include "soapH.h"
 
@@ -24,12 +26,14 @@ char gpLocalAddr[32]={0};
 
 char * CopyString(char *pSrc);
 int getMyIp(void);
-int CreateMulticastClient(void);
+int CreateMulticastClient(int port);
 int CreateMulticastServer(void);
 int SendHello(int socket);
 int SendBye(int socket);
 int SendProbe(int socket);
 int SendResolve(int socket);
+int SendProbeMatches(int socket);
+int SendResolveMatches(int socket);
 
 struct sockaddr_in gMSockAddr;
 char pBuffer[10000]; // XML buffer 
@@ -41,7 +45,8 @@ SOAP_NMAC struct Namespace namespaces[] =
    {"SOAP-ENV", "http://schemas.xmlsoap.org/soap/envelope/", "http://www.w3.org/*/soap-envelope", NULL},
    {"xsd", "http://www.w3.org/2001/XMLSchema", "http://www.w3.org/*/XMLSchema", NULL},
    {"wsa2", "http://www.w3.org/2005/03/addressing", NULL, NULL},
-   {"dis", "http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01", NULL, NULL},
+   {"wsa5", "http://www.w3.org/2005/08/addressing", NULL, NULL},
+   {"wsdd", "http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01", NULL, NULL},
    {NULL, NULL, NULL, NULL}
 };
 
@@ -56,7 +61,7 @@ int main(int argc, char **argv)
 	struct soap* pSoap = NULL;
 	
 	getMyIp();
-	msocket_cli = CreateMulticastClient();
+	//msocket_cli = CreateMulticastClient(MULTICAST_PORT);
 		
 	// busybox
 	vLen = strlen("ws-client");
@@ -66,7 +71,7 @@ int main(int argc, char **argv)
 		// If the executable name is ws-client
 		if(strcmp(&argv[0][vExecutableLen-vLen],"ws-client")==0)
 		{
-			printf("1111\n");
+			msocket_cli = CreateMulticastClient(MULTICAST_PORT);
 			if(argc==2)
 			{
 				if(strcmp(argv[1],"1")==0)
@@ -88,47 +93,45 @@ int main(int argc, char **argv)
 				{
 					usleep(500000);
 					SendBye(msocket_cli); 
+				}
+				else if(strcmp(argv[1],"5")==0)
+				{
+					usleep(500000);
+					SendProbeMatches(msocket_cli); 
 				}					
+				else if(strcmp(argv[1],"6")==0)
+				{
+					usleep(500000);
+					SendResolveMatches(msocket_cli); 
+				}													
+				
 			}
 			else
 			{
 				SendHello(msocket_cli); usleep(500000);
 			}
-			//close(msocket_cli);
+			close(msocket_cli);
 			return 1;
 		}
 	}
 	
-	//msocket_cli = CreateMulticastClient();
+	msocket_cli = CreateMulticastClient(MULTICAST_PORT+1);
 	msocket_srv = CreateMulticastServer();
 	
 	// Handle Probe and Resolve request
 	pSoap = malloc(sizeof(struct soap));
 	soap_init(pSoap);
 	
-	//pSoap = malloc(sizeof(struct soap));
 	pSoap->sendfd = msocket_cli;
 	pSoap->recvfd = msocket_srv;
 			
 	while(1)
 	{
 		soap_serve(pSoap);
-		fprintf(stderr, "%s :%d\n",__func__, __LINE__);
-		#if 0
-		if(read(msocket_srv, pDataBuf, vDataLen) > 0)
-		{
-			printf("got data from msocket_srv\n");
-			
-			// write a callback for frecv
-			soap_serve(pSoap);
-		}
-		else
-		{
-			printf("read error\n");;
-		}
-		#endif
+		fprintf(stderr, "%s %s :%d pid=%d error=%d\n",__FILE__,__func__, __LINE__, getpid(), pSoap->error);
+		
 	}
-	fprintf(stderr, "%s line:%d",__func__, __LINE__);
+	close(msocket_cli);
 	close(msocket_srv);
 }
 
@@ -208,9 +211,13 @@ int SendHello(int socket)
 	soap_body_end_out(pSoap);
 	soap_envelope_end_out(pSoap);
 
-	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
+	// TODO: how to remove http header by gSoap command ??
+	char *pTmp;
+	pTmp = &pBuffer[120];
+	vBufLen -= 120;
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pTmp/*pBuffer*/);
 	
-	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	if(sendto(socket, pTmp/*pBuffer*/, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
@@ -268,9 +275,13 @@ int SendBye(int socket)
 	soap_destroy(pSoap);
 	soap_end(pSoap);
 	
-	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
+	// TODO: how to remove http header by gSoap command ??
+	char *pTmp;
+	pTmp = &pBuffer[120];
+	vBufLen -= 120;
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pTmp/*pBuffer*/);
 	
-	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	if(sendto(socket, pTmp/*pBuffer*/, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
@@ -325,9 +336,13 @@ int SendProbe(int socket)
 	soap_envelope_end_out(pSoap);
 	soap_end_send(pSoap);
 	
-	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
+	// TODO: how to remove http header by gSoap command ??
+	char *pTmp;
+	pTmp = &pBuffer[120];
+	vBufLen -= 120;
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pTmp/*pBuffer*/);
 	
-	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	if(sendto(socket, pTmp/*pBuffer*/, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
@@ -375,9 +390,13 @@ int SendResolve(int socket)
 	soap_body_end_out(pSoap);
 	soap_envelope_end_out(pSoap);
 
-	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
+	// TODO: how to remove http header by gSoap command ??
+	char *pTmp;
+	pTmp = &pBuffer[120];
+	vBufLen -= 120;
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pTmp/*pBuffer*/);
 	
-	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	if(sendto(socket, pTmp/*pBuffer*/, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
@@ -388,6 +407,123 @@ int SendResolve(int socket)
 	soap_destroy(pSoap);	  
 	return SOAP_OK;
 }
+
+
+int SendProbeMatches(int socket)//struct soap *pSoap)
+{	
+	int vErr = 0;
+	struct __wsdd__ProbeMatches *pwsdd__ProbeMatches = malloc(sizeof(struct __wsdd__ProbeMatches));
+	struct wsdd__ProbeMatchesType *pwsdd__ProbeMatchesType = malloc(sizeof(struct wsdd__ProbeMatchesType));	
+	struct soap *pSoap=malloc(sizeof(struct soap));
+	soap_init(pSoap);
+
+	pSoap->fsend = mysend;
+
+	// Build SOAP Header
+	pSoap->header = (struct SOAP_ENV__Header *) malloc(sizeof(struct SOAP_ENV__Header));
+	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Hello");
+	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
+	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
+	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) malloc(sizeof(struct wsdd__AppSequenceType));
+	pSoap->header->wsdd__AppSequence->InstanceId = 1077004800;
+	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
+
+	// Build Hello Message
+	soap_default___wsdd__ProbeMatches(pSoap, pwsdd__ProbeMatches);
+	pSoap->encodingStyle = NULL;
+	
+	pwsdd__ProbeMatches->wsdd__ProbeMatches = pwsdd__ProbeMatchesType;   
+	pwsdd__ProbeMatchesType->__sizeProbeMatch = 1;
+	pwsdd__ProbeMatchesType->ProbeMatch = malloc(sizeof(struct wsdd__ProbeMatchType));
+	pwsdd__ProbeMatchesType->ProbeMatch->wsa5__EndpointReference.Address = CopyString("urn:uuid:98190dc2-0890-4ef8-ac9a-5940995e6119");
+	pwsdd__ProbeMatchesType->ProbeMatch->MetadataVersion = 1234;
+				   
+	soap_serializeheader(pSoap);
+
+	soap_response(pSoap, SOAP_OK);
+	soap_envelope_begin_out(pSoap);
+	soap_putheader(pSoap);
+	soap_body_begin_out(pSoap);
+	vErr = soap_put___wsdd__ProbeMatches(pSoap, pwsdd__ProbeMatches, "-wsdd:ProbeMatches", "wsdd:ProbeMatchType");
+	soap_body_end_out(pSoap);
+	soap_envelope_end_out(pSoap);
+	soap_end_send(pSoap);
+	
+	// TODO: how to remove http header by gSoap command ??
+	char *pTmp;
+	pTmp = &pBuffer[120];
+	vBufLen -= 120;
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pTmp/*pBuffer*/);
+	
+	if(sendto(socket, pTmp/*pBuffer*/, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	{
+		perror("Sending datagram message error");
+	}
+	else
+	  DBG("Sending datagram message...OK\n");	
+	  
+	clearBuffer();
+	soap_destroy(pSoap);	  
+	return SOAP_OK;
+}
+
+int SendResolveMatches(int socket)
+{
+	int vErr = 0;
+	struct __wsdd__ResolveMatches *pwsdd__ResolveMatches = malloc(sizeof(struct __wsdd__ResolveMatches));
+	struct wsdd__ResolveMatchesType *pwsdd__ResolveMatchesType = malloc(sizeof(struct wsdd__ResolveMatchesType));	
+	struct soap *pSoap=malloc(sizeof(struct soap));
+	soap_init(pSoap);
+
+	pSoap->fsend = mysend;
+
+	// Build SOAP Header
+	pSoap->header = (struct SOAP_ENV__Header *) malloc(sizeof(struct SOAP_ENV__Header));
+	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Hello");
+	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
+	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
+	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) malloc(sizeof(struct wsdd__AppSequenceType));
+	pSoap->header->wsdd__AppSequence->InstanceId = 1077004800;
+	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
+
+	// Build Hello Message
+	soap_default___wsdd__ResolveMatches(pSoap, pwsdd__ResolveMatches);
+	pSoap->encodingStyle = NULL;
+	
+	pwsdd__ResolveMatches->wsdd__ResolveMatches = pwsdd__ResolveMatchesType;   
+	pwsdd__ResolveMatchesType->ResolveMatch = malloc(sizeof(struct wsdd__ResolveMatchType));	
+	pwsdd__ResolveMatchesType->ResolveMatch->wsa5__EndpointReference.Address = CopyString("urn:uuid:98190dc2-0890-4ef8-ac9a-5940995e6119");
+	pwsdd__ResolveMatchesType->ResolveMatch->MetadataVersion = 1234;
+				   
+	soap_serializeheader(pSoap);
+
+	soap_response(pSoap, SOAP_OK);
+	soap_envelope_begin_out(pSoap);
+	soap_putheader(pSoap);
+	soap_body_begin_out(pSoap);
+	vErr = soap_put___wsdd__ResolveMatches(pSoap, pwsdd__ResolveMatches, "-wsdd:ResolveMatches", "wsdd:ProbeMatchType");
+	soap_body_end_out(pSoap);
+	soap_envelope_end_out(pSoap);
+	soap_end_send(pSoap);
+	
+	// TODO: how to remove http header by gSoap command ??
+	char *pTmp;
+	pTmp = &pBuffer[120];
+	vBufLen -= 120;
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pTmp/*pBuffer*/);
+	
+	if(sendto(socket, pTmp/*pBuffer*/, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	{
+		perror("Sending datagram message error");
+	}
+	else
+	  DBG("Sending datagram message...OK\n");	
+	  
+	clearBuffer();
+	soap_destroy(pSoap);	  
+	return SOAP_OK;
+}
+
 
 // Utilities of Network
 int getMyIp(void)
@@ -429,7 +565,7 @@ int getMyIp(void)
 }
 
 
-int CreateMulticastClient(void)
+int CreateMulticastClient(int port)
 {
 	// http://www.tenouk.com/Module41c.html
 	struct in_addr localInterface;
@@ -442,12 +578,12 @@ int CreateMulticastClient(void)
 	  exit(1);
 	}
 	else
-	  DBG("Opening the datagram socket...OK.\n");
+	  DBG("Opening the datagram socket %d...OK.\n", sd);
 
 	memset((char *) &gMSockAddr, 0, sizeof(gMSockAddr));
 	gMSockAddr.sin_family = AF_INET;
 	gMSockAddr.sin_addr.s_addr = inet_addr(MULTICAST_ADDR);
-	gMSockAddr.sin_port = htons(MULTICAST_PORT);
+	gMSockAddr.sin_port = htons(port);
 	  	
 	localInterface.s_addr = inet_addr(LOCAL_ADDR);
 	if(setsockopt(sd, IPPROTO_IP, IP_MULTICAST_IF, (char *)&localInterface.s_addr, sizeof(localInterface)) < 0)
@@ -474,7 +610,7 @@ int CreateMulticastServer(void)
 	  exit(1);
 	}
 	else
-	  DBG("Opening the datagram socket...OK.\n");
+	  DBG("Opening the datagram socket %d...OK.\n",sd);
 
 	{
 		int reuse = 1;
@@ -518,16 +654,15 @@ int CreateMulticastServer(void)
 // Receive Multicast request and send unicast response (Probe and Resolve)
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__ProbeMatches(struct soap *pSoap, struct wsdd__ProbeMatchesType *wsdd__ProbeMatches)
 {
-	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	fprintf(stderr, "%s %s :%d sendfd=%d\n",__FILE__,__func__, __LINE__, pSoap->sendfd);
 	return SOAP_OK;
-}
+}	
 
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__ResolveMatches(struct soap *pSoap, struct wsdd__ResolveMatchesType *wsdd__ResolveMatches)
 {
 	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
 	return SOAP_OK;
 }
-
 
 // Unused callback function
 SOAP_FMAC5 int SOAP_FMAC6 SOAP_ENV__Fault(struct soap *pSoap, char *faultcode, char *faultstring, char *faultactor, struct SOAP_ENV__Detail *detail, struct SOAP_ENV__Code *SOAP_ENV__Code, struct SOAP_ENV__Reason *SOAP_ENV__Reason, char *SOAP_ENV__Node, char *SOAP_ENV__Role, struct SOAP_ENV__Detail *SOAP_ENV__Detail)
@@ -550,7 +685,18 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Bye(struct soap *pSoap, struct wsdd__ByeType *
 
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeType *wsdd__Probe)
 {
-	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	fprintf(stderr, "%s %s :%d sendfd=%d\n",__FILE__,__func__, __LINE__, pSoap->sendfd);
+	
+	fprintf(stderr, "\n======\n");
+	if(wsdd__Probe->Types)
+		fprintf(stderr, "Types=%s\n",wsdd__Probe->Types);	
+	if(wsdd__Probe->Scopes)
+	{
+		fprintf(stderr, "Scopes->__item=%s\n",wsdd__Probe->Scopes->__item);	
+		fprintf(stderr, "Scopes->MatchBy=%s\n",wsdd__Probe->Scopes->MatchBy);	
+	}
+	fprintf(stderr, "======\n\n");
+	
 	return SOAP_OK;
 }
 
