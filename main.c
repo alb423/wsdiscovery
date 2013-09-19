@@ -189,7 +189,7 @@ int SendHello(int socket)
 	struct __wsdd__Hello *pWsdd__Hello = MyMalloc(sizeof(struct __wsdd__Hello));
 	struct wsdd__HelloType *pWsdd__HelloType = MyMalloc(sizeof(struct wsdd__HelloType));	
 	struct soap *pSoap=MyMalloc(sizeof(struct soap));
-	soap_init(pSoap);
+	soap_init1(pSoap,SOAP_IO_UDP);
 	
 	pSoap->fsend = mysend;
 
@@ -224,22 +224,20 @@ int SendHello(int socket)
 	vErr = soap_put___wsdd__Hello(pSoap, pWsdd__Hello, "-wsdd:Hello", "wsdd:HelloType");
 	soap_body_end_out(pSoap);
 	soap_envelope_end_out(pSoap);
-
-	// TODO: how to remove http header by gSoap command ??
-	char *pTmp;
-	pTmp = &pBuffer[120];
-	vBufLen -= 120;
-	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pTmp/*pBuffer*/);
+	soap_destroy(pSoap);
+	soap_end(pSoap);
 	
-	if(sendto(socket, pTmp/*pBuffer*/, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
+	
+	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
 	else
-	  DBG("Sending datagram message...OK\n");	
+	  DBG("Sending datagram message...OK\n");		
 	  
 	clearBuffer();
-	soap_destroy(pSoap);	  
+	  
 	return SOAP_OK;
 }
 
@@ -249,7 +247,7 @@ int SendBye(int socket)
 	struct __wsdd__Bye *pWsdd__Bye = MyMalloc(sizeof(struct __wsdd__Bye));
 	struct wsdd__ByeType *pWsdd__ByeType = MyMalloc(sizeof(struct wsdd__ByeType));	
 	struct soap *pSoap=MyMalloc(sizeof(struct soap));
-	soap_init(pSoap);
+	soap_init1(pSoap,SOAP_IO_UDP);
 
 	pSoap->fsend = mysend;
 
@@ -289,13 +287,9 @@ int SendBye(int socket)
 	soap_destroy(pSoap);
 	soap_end(pSoap);
 	
-	// TODO: how to remove http header by gSoap command ??
-	char *pTmp;
-	pTmp = &pBuffer[120];
-	vBufLen -= 120;
-	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pTmp/*pBuffer*/);
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
 	
-	if(sendto(socket, pTmp/*pBuffer*/, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
@@ -315,7 +309,7 @@ int SendProbe(int socket)
 	struct __wsdd__Probe *pWsdd__Probe = MyMalloc(sizeof(struct __wsdd__Probe));
 	struct wsdd__ProbeType *pWsdd__ProbeType = MyMalloc(sizeof(struct wsdd__ProbeType));	
 	struct soap *pSoap=MyMalloc(sizeof(struct soap));
-	soap_init(pSoap);
+	soap_init1(pSoap,SOAP_IO_UDP);
 
 	pSoap->fsend = mysend;
 
@@ -349,22 +343,19 @@ int SendProbe(int socket)
 	soap_body_end_out(pSoap);
 	soap_envelope_end_out(pSoap);
 	soap_end_send(pSoap);
+	soap_destroy(pSoap);
+	soap_end(pSoap);
+		
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
 	
-	// TODO: how to remove http header by gSoap command ??
-	char *pTmp;
-	pTmp = &pBuffer[120];
-	vBufLen -= 120;
-	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pTmp/*pBuffer*/);
-	
-	if(sendto(socket, pTmp/*pBuffer*/, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
 	else
 	  DBG("Sending datagram message...OK\n");	
 	  
-	clearBuffer();
-	soap_destroy(pSoap);	  
+	clearBuffer();	  
 	return SOAP_OK;
 }
 
@@ -374,7 +365,7 @@ int SendResolve(int socket)
 	struct __wsdd__Resolve *pWsdd__Resolve = MyMalloc(sizeof(struct __wsdd__Resolve));
 	struct wsdd__ResolveType *pWsdd__ResolveType = MyMalloc(sizeof(struct wsdd__ResolveType));	
 	struct soap *pSoap=MyMalloc(sizeof(struct soap));
-	soap_init(pSoap);
+	soap_init1(pSoap,SOAP_IO_UDP);
 
 	pSoap->fsend = mysend;
 
@@ -403,14 +394,12 @@ int SendResolve(int socket)
 	vErr = soap_put___wsdd__Resolve(pSoap, pWsdd__Resolve, "-wsdd:Resolve", "wsdd:ResolveType");
 	soap_body_end_out(pSoap);
 	soap_envelope_end_out(pSoap);
-
-	// TODO: how to remove http header by gSoap command ??
-	char *pTmp;
-	pTmp = &pBuffer[120];
-	vBufLen -= 120;
-	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pTmp/*pBuffer*/);
+	soap_destroy(pSoap);
+	soap_end(pSoap);
 	
-	if(sendto(socket, pTmp/*pBuffer*/, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
+	
+	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
@@ -418,7 +407,7 @@ int SendResolve(int socket)
 	  DBG("Sending datagram message...OK\n");	
 	  
 	clearBuffer();
-	soap_destroy(pSoap);	  
+	  
 	return SOAP_OK;
 }
 
@@ -429,24 +418,10 @@ int SendProbeMatches(int socket)//struct soap *pSoap)
 	struct __wsdd__ProbeMatches *pwsdd__ProbeMatches = MyMalloc(sizeof(struct __wsdd__ProbeMatches));
 	struct wsdd__ProbeMatchesType *pwsdd__ProbeMatchesType = MyMalloc(sizeof(struct wsdd__ProbeMatchesType));	
 	struct soap *pSoap=MyMalloc(sizeof(struct soap));
-	soap_init(pSoap);
+	soap_init1(pSoap,SOAP_IO_UDP);
 
 	pSoap->fsend = mysend;
 
-#if 0
-struct SOAP_ENV__Header
-{
-	char *wsa5__MessageID;	/* optional element of type wsa5:MessageID */
-	struct wsa5__RelatesToType *wsa5__RelatesTo;	/* optional element of type wsa5:RelatesTo */
-	struct wsa5__EndpointReferenceType *wsa5__From;	/* optional element of type wsa5:From */
-	struct wsa5__EndpointReferenceType *wsa5__ReplyTo;	/* mustUnderstand */
-	struct wsa5__EndpointReferenceType *wsa5__FaultTo;	/* mustUnderstand */
-	char *wsa5__To;	/* mustUnderstand */
-	char *wsa5__Action;	/* mustUnderstand */
-	struct chan__ChannelInstanceType *chan__ChannelInstance;	/* optional element of type chan:ChannelInstanceType */
-	struct wsdd__AppSequenceType *wsdd__AppSequence;	/* optional element of type wsdd:AppSequenceType */
-};
-#endif
 
 	// Build SOAP Header
 	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
@@ -476,22 +451,19 @@ struct SOAP_ENV__Header
 	soap_serializeheader(pSoap);
 
 	soap_response(pSoap, SOAP_OK); 
-	soap_envelope_begin_out(pSoap); fprintf(stderr, "%s %s :%d err=%d\n",__FILE__,__func__, __LINE__, pSoap->error);
-	// TODO: key
-	soap_putheader(pSoap); fprintf(stderr, "%s %s :%d err=%d\n",__FILE__,__func__, __LINE__, pSoap->error);
+	soap_envelope_begin_out(pSoap);
+	soap_putheader(pSoap);
 	soap_body_begin_out(pSoap);
 	vErr = soap_put___wsdd__ProbeMatches(pSoap, pwsdd__ProbeMatches, "-wsdd:ProbeMatches", "wsdd:ProbeMatchType");
 	soap_body_end_out(pSoap);
 	soap_envelope_end_out(pSoap);
 	soap_end_send(pSoap);
+	soap_destroy(pSoap);
+	soap_end(pSoap);
+		
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
 	
-	// TODO: how to remove http header by gSoap command ??
-	char *pTmp;
-	pTmp = &pBuffer[120];
-	vBufLen -= 120;
-	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pTmp/*pBuffer*/);
-	
-	if(sendto(socket, pTmp/*pBuffer*/, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
@@ -499,7 +471,7 @@ struct SOAP_ENV__Header
 	  DBG("Sending datagram message...OK\n");	
 	  
 	clearBuffer();
-	soap_destroy(pSoap);	  
+	  
 	return SOAP_OK;
 }
 
@@ -509,7 +481,7 @@ int SendResolveMatches(int socket)
 	struct __wsdd__ResolveMatches *pwsdd__ResolveMatches = MyMalloc(sizeof(struct __wsdd__ResolveMatches));
 	struct wsdd__ResolveMatchesType *pwsdd__ResolveMatchesType = MyMalloc(sizeof(struct wsdd__ResolveMatchesType));	
 	struct soap *pSoap=MyMalloc(sizeof(struct soap));
-	soap_init(pSoap);
+	soap_init1(pSoap,SOAP_IO_UDP);
 
 	pSoap->fsend = mysend;
 
@@ -541,14 +513,12 @@ int SendResolveMatches(int socket)
 	soap_body_end_out(pSoap);
 	soap_envelope_end_out(pSoap);
 	soap_end_send(pSoap);
+	soap_destroy(pSoap);
+	soap_end(pSoap);
+		
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
 	
-	// TODO: how to remove http header by gSoap command ??
-	char *pTmp;
-	pTmp = &pBuffer[120];
-	vBufLen -= 120;
-	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pTmp/*pBuffer*/);
-	
-	if(sendto(socket, pTmp/*pBuffer*/, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
@@ -556,7 +526,7 @@ int SendResolveMatches(int socket)
 	  DBG("Sending datagram message...OK\n");	
 	  
 	clearBuffer();
-	soap_destroy(pSoap);	  
+	  
 	return SOAP_OK;
 }
 
@@ -702,6 +672,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 	}
 	fprintf(stderr, "======\n\n");
 #endif	
+
 	SendProbeMatches(pSoap->sendfd);
 	return SOAP_OK;
 }
