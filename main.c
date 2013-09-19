@@ -34,6 +34,7 @@ int SendProbe(int socket);
 int SendResolve(int socket);
 int SendProbeMatches(int socket);
 int SendResolveMatches(int socket);
+void * MyMalloc(int vSize);
 
 struct sockaddr_in gMSockAddr;
 char pBuffer[10000]; // XML buffer 
@@ -119,7 +120,7 @@ int main(int argc, char **argv)
 	msocket_srv = CreateMulticastServer();
 	
 	// Handle Probe and Resolve request
-	pSoap = malloc(sizeof(struct soap));
+	pSoap = MyMalloc(sizeof(struct soap));
 	soap_init(pSoap);
 	
 	pSoap->sendfd = msocket_cli;
@@ -137,6 +138,18 @@ int main(int argc, char **argv)
 
 
 // Utilities for gSOAP XML handle
+void * MyMalloc(int vSize)
+{
+	char *pSrc = NULL;
+	
+	if(vSize<=0) return NULL;
+		
+	pSrc = malloc(vSize);
+	memset(pSrc, 0, vSize);
+	
+	return pSrc;
+}
+
 char * CopyString(char *pSrc)
 {
 	int vLen = 0;
@@ -145,7 +158,7 @@ char * CopyString(char *pSrc)
 	if(!pSrc) return NULL;
 		
 	vLen = strlen(pSrc);
-	pDst = malloc(vLen);	
+	pDst = MyMalloc(vLen);	
 	memset(pDst, 0, vLen);
 	memcpy(pDst, pSrc, vLen);
 	
@@ -168,23 +181,24 @@ int mysend(struct soap *soap, const char *s, size_t n)
 } 
 
 
+
 // Send Multicast Packet (Hello and Bye)
 int SendHello(int socket)
 {
 	int vErr = 0;
-	struct __wsdd__Hello *pWsdd__Hello = malloc(sizeof(struct __wsdd__Hello));
-	struct wsdd__HelloType *pWsdd__HelloType = malloc(sizeof(struct wsdd__HelloType));	
-	struct soap *pSoap=malloc(sizeof(struct soap));
+	struct __wsdd__Hello *pWsdd__Hello = MyMalloc(sizeof(struct __wsdd__Hello));
+	struct wsdd__HelloType *pWsdd__HelloType = MyMalloc(sizeof(struct wsdd__HelloType));	
+	struct soap *pSoap=MyMalloc(sizeof(struct soap));
 	soap_init(pSoap);
 	
 	pSoap->fsend = mysend;
 
 	// Build SOAP Header
-	pSoap->header = (struct SOAP_ENV__Header *) malloc(sizeof(struct SOAP_ENV__Header));
+	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
 	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Hello");
 	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
 	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
-	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) malloc(sizeof(struct wsdd__AppSequenceType));
+	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = 1077004800;
 	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
 
@@ -195,7 +209,7 @@ int SendHello(int socket)
 	pWsdd__Hello->wsdd__Hello = pWsdd__HelloType;   
 	pWsdd__HelloType->wsa5__EndpointReference.Address = CopyString("urn:uuid:98190dc2-0890-4ef8-ac9a-5940995e6119");
 	pWsdd__HelloType->Types = CopyString("tds:Device");
-	pWsdd__HelloType->Scopes = malloc(sizeof(struct wsdd__ScopesType));
+	pWsdd__HelloType->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
 	pWsdd__HelloType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");; 
 	pWsdd__HelloType->Scopes->__item = CopyString("onvif://www.onvif.org/Profile/Streaming");
 	pWsdd__HelloType->XAddrs = CopyString("444");
@@ -232,19 +246,19 @@ int SendHello(int socket)
 int SendBye(int socket)
 {
 	int vErr = 0;
-	struct __wsdd__Bye *pWsdd__Bye = malloc(sizeof(struct __wsdd__Bye));
-	struct wsdd__ByeType *pWsdd__ByeType = malloc(sizeof(struct wsdd__ByeType));	
-	struct soap *pSoap=malloc(sizeof(struct soap));
+	struct __wsdd__Bye *pWsdd__Bye = MyMalloc(sizeof(struct __wsdd__Bye));
+	struct wsdd__ByeType *pWsdd__ByeType = MyMalloc(sizeof(struct wsdd__ByeType));	
+	struct soap *pSoap=MyMalloc(sizeof(struct soap));
 	soap_init(pSoap);
 
 	pSoap->fsend = mysend;
 
 	// Build SOAP Header
-	pSoap->header = (struct SOAP_ENV__Header *) malloc(sizeof(struct SOAP_ENV__Header));
+	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
 	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Hello");
 	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
 	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
-	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) malloc(sizeof(struct wsdd__AppSequenceType));
+	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = 1077004800;
 	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
 
@@ -255,7 +269,7 @@ int SendBye(int socket)
 	pWsdd__Bye->wsdd__Bye = pWsdd__ByeType;   
 	pWsdd__ByeType->wsa5__EndpointReference.Address = CopyString("urn:uuid:98190dc2-0890-4ef8-ac9a-5940995e6119");
 	pWsdd__ByeType->Types = CopyString("tds:Device");
-	pWsdd__ByeType->Scopes = malloc(sizeof(struct wsdd__ScopesType));
+	pWsdd__ByeType->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
 	pWsdd__ByeType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");; 
 	pWsdd__ByeType->Scopes->__item = CopyString("onvif://www.onvif.org/Profile/Streaming");
 	pWsdd__ByeType->XAddrs = CopyString("444");
@@ -298,19 +312,19 @@ int SendBye(int socket)
 int SendProbe(int socket)
 {
 	int vErr = 0;
-	struct __wsdd__Probe *pWsdd__Probe = malloc(sizeof(struct __wsdd__Probe));
-	struct wsdd__ProbeType *pWsdd__ProbeType = malloc(sizeof(struct wsdd__ProbeType));	
-	struct soap *pSoap=malloc(sizeof(struct soap));
+	struct __wsdd__Probe *pWsdd__Probe = MyMalloc(sizeof(struct __wsdd__Probe));
+	struct wsdd__ProbeType *pWsdd__ProbeType = MyMalloc(sizeof(struct wsdd__ProbeType));	
+	struct soap *pSoap=MyMalloc(sizeof(struct soap));
 	soap_init(pSoap);
 
 	pSoap->fsend = mysend;
 
 	// Build SOAP Header
-	pSoap->header = (struct SOAP_ENV__Header *) malloc(sizeof(struct SOAP_ENV__Header));
+	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
 	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Hello");
 	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
 	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
-	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) malloc(sizeof(struct wsdd__AppSequenceType));
+	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = 1077004800;
 	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
 
@@ -320,7 +334,7 @@ int SendProbe(int socket)
 	
 	pWsdd__Probe->wsdd__Probe = pWsdd__ProbeType;   
 	pWsdd__ProbeType->Types = CopyString("tds:Device");
-	pWsdd__ProbeType->Scopes = malloc(sizeof(struct wsdd__ScopesType));
+	pWsdd__ProbeType->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
 	pWsdd__ProbeType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");; 
 	pWsdd__ProbeType->Scopes->__item = CopyString("onvif://www.onvif.org/Profile/Streaming");
 				   
@@ -357,19 +371,19 @@ int SendProbe(int socket)
 int SendResolve(int socket)
 {
 	int vErr = 0;
-	struct __wsdd__Resolve *pWsdd__Resolve = malloc(sizeof(struct __wsdd__Resolve));
-	struct wsdd__ResolveType *pWsdd__ResolveType = malloc(sizeof(struct wsdd__ResolveType));	
-	struct soap *pSoap=malloc(sizeof(struct soap));
+	struct __wsdd__Resolve *pWsdd__Resolve = MyMalloc(sizeof(struct __wsdd__Resolve));
+	struct wsdd__ResolveType *pWsdd__ResolveType = MyMalloc(sizeof(struct wsdd__ResolveType));	
+	struct soap *pSoap=MyMalloc(sizeof(struct soap));
 	soap_init(pSoap);
 
 	pSoap->fsend = mysend;
 
 	// Build SOAP Header
-	pSoap->header = (struct SOAP_ENV__Header *) malloc(sizeof(struct SOAP_ENV__Header));
+	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
 	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Resolve");
 	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
 	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
-	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) malloc(sizeof(struct wsdd__AppSequenceType));
+	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = 1077004800;
 	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
 
@@ -412,37 +426,59 @@ int SendResolve(int socket)
 int SendProbeMatches(int socket)//struct soap *pSoap)
 {	
 	int vErr = 0;
-	struct __wsdd__ProbeMatches *pwsdd__ProbeMatches = malloc(sizeof(struct __wsdd__ProbeMatches));
-	struct wsdd__ProbeMatchesType *pwsdd__ProbeMatchesType = malloc(sizeof(struct wsdd__ProbeMatchesType));	
-	struct soap *pSoap=malloc(sizeof(struct soap));
+	struct __wsdd__ProbeMatches *pwsdd__ProbeMatches = MyMalloc(sizeof(struct __wsdd__ProbeMatches));
+	struct wsdd__ProbeMatchesType *pwsdd__ProbeMatchesType = MyMalloc(sizeof(struct wsdd__ProbeMatchesType));	
+	struct soap *pSoap=MyMalloc(sizeof(struct soap));
 	soap_init(pSoap);
 
 	pSoap->fsend = mysend;
 
+#if 0
+struct SOAP_ENV__Header
+{
+	char *wsa5__MessageID;	/* optional element of type wsa5:MessageID */
+	struct wsa5__RelatesToType *wsa5__RelatesTo;	/* optional element of type wsa5:RelatesTo */
+	struct wsa5__EndpointReferenceType *wsa5__From;	/* optional element of type wsa5:From */
+	struct wsa5__EndpointReferenceType *wsa5__ReplyTo;	/* mustUnderstand */
+	struct wsa5__EndpointReferenceType *wsa5__FaultTo;	/* mustUnderstand */
+	char *wsa5__To;	/* mustUnderstand */
+	char *wsa5__Action;	/* mustUnderstand */
+	struct chan__ChannelInstanceType *chan__ChannelInstance;	/* optional element of type chan:ChannelInstanceType */
+	struct wsdd__AppSequenceType *wsdd__AppSequence;	/* optional element of type wsdd:AppSequenceType */
+};
+#endif
+
 	// Build SOAP Header
-	pSoap->header = (struct SOAP_ENV__Header *) malloc(sizeof(struct SOAP_ENV__Header));
+	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
+	memset(pSoap->header, 0, sizeof(struct SOAP_ENV__Header));
 	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Hello");
 	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
 	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
-	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) malloc(sizeof(struct wsdd__AppSequenceType));
+	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
+	memset(pSoap->header->wsdd__AppSequence, 0, sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = 1077004800;
 	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
 
+	pSoap->header->wsa5__ReplyTo = MyMalloc(sizeof(struct wsa5__EndpointReferenceType));
+	memset(pSoap->header->wsa5__ReplyTo, 0, sizeof(struct wsa5__EndpointReferenceType));
+	pSoap->header->wsa5__ReplyTo->Address = CopyString("urn:uuid:98190dc2-0890-4ef8-ac9a-5940995e6119");
+	
 	// Build Hello Message
 	soap_default___wsdd__ProbeMatches(pSoap, pwsdd__ProbeMatches);
 	pSoap->encodingStyle = NULL;
 	
 	pwsdd__ProbeMatches->wsdd__ProbeMatches = pwsdd__ProbeMatchesType;   
 	pwsdd__ProbeMatchesType->__sizeProbeMatch = 1;
-	pwsdd__ProbeMatchesType->ProbeMatch = malloc(sizeof(struct wsdd__ProbeMatchType));
+	pwsdd__ProbeMatchesType->ProbeMatch = MyMalloc(sizeof(struct wsdd__ProbeMatchType));
 	pwsdd__ProbeMatchesType->ProbeMatch->wsa5__EndpointReference.Address = CopyString("urn:uuid:98190dc2-0890-4ef8-ac9a-5940995e6119");
 	pwsdd__ProbeMatchesType->ProbeMatch->MetadataVersion = 1234;
 				   
 	soap_serializeheader(pSoap);
 
-	soap_response(pSoap, SOAP_OK);
-	soap_envelope_begin_out(pSoap);
-	soap_putheader(pSoap);
+	soap_response(pSoap, SOAP_OK); 
+	soap_envelope_begin_out(pSoap); fprintf(stderr, "%s %s :%d err=%d\n",__FILE__,__func__, __LINE__, pSoap->error);
+	// TODO: key
+	soap_putheader(pSoap); fprintf(stderr, "%s %s :%d err=%d\n",__FILE__,__func__, __LINE__, pSoap->error);
 	soap_body_begin_out(pSoap);
 	vErr = soap_put___wsdd__ProbeMatches(pSoap, pwsdd__ProbeMatches, "-wsdd:ProbeMatches", "wsdd:ProbeMatchType");
 	soap_body_end_out(pSoap);
@@ -470,19 +506,19 @@ int SendProbeMatches(int socket)//struct soap *pSoap)
 int SendResolveMatches(int socket)
 {
 	int vErr = 0;
-	struct __wsdd__ResolveMatches *pwsdd__ResolveMatches = malloc(sizeof(struct __wsdd__ResolveMatches));
-	struct wsdd__ResolveMatchesType *pwsdd__ResolveMatchesType = malloc(sizeof(struct wsdd__ResolveMatchesType));	
-	struct soap *pSoap=malloc(sizeof(struct soap));
+	struct __wsdd__ResolveMatches *pwsdd__ResolveMatches = MyMalloc(sizeof(struct __wsdd__ResolveMatches));
+	struct wsdd__ResolveMatchesType *pwsdd__ResolveMatchesType = MyMalloc(sizeof(struct wsdd__ResolveMatchesType));	
+	struct soap *pSoap=MyMalloc(sizeof(struct soap));
 	soap_init(pSoap);
 
 	pSoap->fsend = mysend;
 
 	// Build SOAP Header
-	pSoap->header = (struct SOAP_ENV__Header *) malloc(sizeof(struct SOAP_ENV__Header));
+	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
 	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Hello");
 	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
 	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
-	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) malloc(sizeof(struct wsdd__AppSequenceType));
+	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = 1077004800;
 	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
 
@@ -491,7 +527,7 @@ int SendResolveMatches(int socket)
 	pSoap->encodingStyle = NULL;
 	
 	pwsdd__ResolveMatches->wsdd__ResolveMatches = pwsdd__ResolveMatchesType;   
-	pwsdd__ResolveMatchesType->ResolveMatch = malloc(sizeof(struct wsdd__ResolveMatchType));	
+	pwsdd__ResolveMatchesType->ResolveMatch = MyMalloc(sizeof(struct wsdd__ResolveMatchType));	
 	pwsdd__ResolveMatchesType->ResolveMatch->wsa5__EndpointReference.Address = CopyString("urn:uuid:98190dc2-0890-4ef8-ac9a-5940995e6119");
 	pwsdd__ResolveMatchesType->ResolveMatch->MetadataVersion = 1234;
 				   
@@ -501,7 +537,7 @@ int SendResolveMatches(int socket)
 	soap_envelope_begin_out(pSoap);
 	soap_putheader(pSoap);
 	soap_body_begin_out(pSoap);
-	vErr = soap_put___wsdd__ResolveMatches(pSoap, pwsdd__ResolveMatches, "-wsdd:ResolveMatches", "wsdd:ProbeMatchType");
+	vErr = soap_put___wsdd__ResolveMatches(pSoap, pwsdd__ResolveMatches, "-wsdd:ResolveMatches", "wsdd:ResolveMatchType");
 	soap_body_end_out(pSoap);
 	soap_envelope_end_out(pSoap);
 	soap_end_send(pSoap);
@@ -652,17 +688,31 @@ int CreateMulticastServer(void)
 }
 
 // Receive Multicast request and send unicast response (Probe and Resolve)
-SOAP_FMAC5 int SOAP_FMAC6 __wsdd__ProbeMatches(struct soap *pSoap, struct wsdd__ProbeMatchesType *wsdd__ProbeMatches)
+SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeType *wsdd__Probe)
 {
 	fprintf(stderr, "%s %s :%d sendfd=%d\n",__FILE__,__func__, __LINE__, pSoap->sendfd);
-	return SOAP_OK;
-}	
-
-SOAP_FMAC5 int SOAP_FMAC6 __wsdd__ResolveMatches(struct soap *pSoap, struct wsdd__ResolveMatchesType *wsdd__ResolveMatches)
-{
-	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+#if 0	
+	fprintf(stderr, "\n======\n");
+	if(wsdd__Probe->Types)
+		fprintf(stderr, "Types=%s\n",wsdd__Probe->Types);	
+	if(wsdd__Probe->Scopes)
+	{
+		fprintf(stderr, "Scopes->__item=%s\n",wsdd__Probe->Scopes->__item);	
+		fprintf(stderr, "Scopes->MatchBy=%s\n",wsdd__Probe->Scopes->MatchBy);	
+	}
+	fprintf(stderr, "======\n\n");
+#endif	
+	SendProbeMatches(pSoap->sendfd);
 	return SOAP_OK;
 }
+
+SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Resolve(struct soap *pSoap, struct wsdd__ResolveType *wsdd__Resolve)
+{
+	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	SendResolveMatches(pSoap->sendfd);
+	return SOAP_OK;
+}
+
 
 // Unused callback function
 SOAP_FMAC5 int SOAP_FMAC6 SOAP_ENV__Fault(struct soap *pSoap, char *faultcode, char *faultstring, char *faultactor, struct SOAP_ENV__Detail *detail, struct SOAP_ENV__Code *SOAP_ENV__Code, struct SOAP_ENV__Reason *SOAP_ENV__Reason, char *SOAP_ENV__Node, char *SOAP_ENV__Role, struct SOAP_ENV__Detail *SOAP_ENV__Detail)
@@ -683,24 +733,13 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Bye(struct soap *pSoap, struct wsdd__ByeType *
 	return SOAP_OK;
 }
 
-SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeType *wsdd__Probe)
+SOAP_FMAC5 int SOAP_FMAC6 __wsdd__ProbeMatches(struct soap *pSoap, struct wsdd__ProbeMatchesType *wsdd__ProbeMatches)
 {
 	fprintf(stderr, "%s %s :%d sendfd=%d\n",__FILE__,__func__, __LINE__, pSoap->sendfd);
-	
-	fprintf(stderr, "\n======\n");
-	if(wsdd__Probe->Types)
-		fprintf(stderr, "Types=%s\n",wsdd__Probe->Types);	
-	if(wsdd__Probe->Scopes)
-	{
-		fprintf(stderr, "Scopes->__item=%s\n",wsdd__Probe->Scopes->__item);	
-		fprintf(stderr, "Scopes->MatchBy=%s\n",wsdd__Probe->Scopes->MatchBy);	
-	}
-	fprintf(stderr, "======\n\n");
-	
 	return SOAP_OK;
-}
+}	
 
-SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Resolve(struct soap *pSoap, struct wsdd__ResolveType *wsdd__Resolve)
+SOAP_FMAC5 int SOAP_FMAC6 __wsdd__ResolveMatches(struct soap *pSoap, struct wsdd__ResolveMatchesType *wsdd__ResolveMatches)
 {
 	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
 	return SOAP_OK;
