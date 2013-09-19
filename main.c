@@ -10,7 +10,7 @@
 
 #include "soapH.h"
 
-//#define _DEUBG_
+#define _DEUBG_
 #ifdef _DEUBG_
 	#define DBG printf
 #else
@@ -28,6 +28,8 @@ int CreateMulticastClient(void);
 int CreateMulticastServer(void);
 int SendHello(int socket);
 int SendBye(int socket);
+int SendProbe(int socket);
+int SendResolve(int socket);
 
 struct sockaddr_in gMSockAddr;
 char pBuffer[10000]; // XML buffer 
@@ -46,38 +48,88 @@ SOAP_NMAC struct Namespace namespaces[] =
 
 int main(int argc, char **argv)
 {
-	int socket_cli = 0, socket_srv = 0;
+	int vLen = 0, vExecutableLen = 0;
+	int msocket_cli = 0, msocket_srv = 0;
+	int vDataLen = 1024*5;
+	char pDataBuf[1024*5];
+	
+	struct soap* pSoap = NULL;
 	
 	getMyIp();
-	
-	socket_cli = CreateMulticastClient();
-	socket_srv = CreateMulticastServer();
-	
-	SendHello(socket_cli); usleep(500000);
-	//SendHello(socket); usleep(500000);
-	//SendHello(socket); usleep(500000);
-
-	// Handle Probe and Resolve request
-	#if 0
-	{
-		struct soap* pSoap = malloc(sizeof(struct soap));
-		//pSoap->sendfd
-		pSoap->recvfd = socket_srv;
-		soap_serve(pSoap);
+	msocket_cli = CreateMulticastClient();
 		
-//		if(read(sd, databuf, datalen) < 0)
-//		{
-//		perror("Reading datagram message error");
-//		close(sd);
-//		exit(1);
-//		}
+	// busybox
+	vLen = strlen("ws-client");
+	vExecutableLen = strlen(argv[0]);
+	if(vLen <= vExecutableLen )
+	{
+		// If the executable name is ws-client
+		if(strcmp(&argv[0][vExecutableLen-vLen],"ws-client")==0)
+		{
+			printf("1111\n");
+			if(argc==2)
+			{
+				if(strcmp(argv[1],"1")==0)
+				{
+					usleep(500000);
+					SendHello(msocket_cli); 
+				}
+				else if(strcmp(argv[1],"2")==0)
+				{
+					usleep(500000);
+					SendProbe(msocket_cli); 
+				}					
+				else if(strcmp(argv[1],"3")==0)
+				{
+					usleep(500000);
+					SendResolve(msocket_cli); 
+				}					
+				else if(strcmp(argv[1],"4")==0)
+				{
+					usleep(500000);
+					SendBye(msocket_cli); 
+				}					
+			}
+			else
+			{
+				SendHello(msocket_cli); usleep(500000);
+			}
+			//close(msocket_cli);
+			return 1;
+		}
 	}
-	#endif 
 	
+	//msocket_cli = CreateMulticastClient();
+	msocket_srv = CreateMulticastServer();
 	
-	SendBye(socket_cli); usleep(500000);
-	//SendBye(socket); usleep(500000);
-	//SendBye(socket); usleep(500000);	
+	// Handle Probe and Resolve request
+	pSoap = malloc(sizeof(struct soap));
+	soap_init(pSoap);
+	
+	//pSoap = malloc(sizeof(struct soap));
+	pSoap->sendfd = msocket_cli;
+	pSoap->recvfd = msocket_srv;
+			
+	while(1)
+	{
+		soap_serve(pSoap);
+		fprintf(stderr, "%s :%d\n",__func__, __LINE__);
+		#if 0
+		if(read(msocket_srv, pDataBuf, vDataLen) > 0)
+		{
+			printf("got data from msocket_srv\n");
+			
+			// write a callback for frecv
+			soap_serve(pSoap);
+		}
+		else
+		{
+			printf("read error\n");;
+		}
+		#endif
+	}
+	fprintf(stderr, "%s line:%d",__func__, __LINE__);
+	close(msocket_srv);
 }
 
 
@@ -121,7 +173,7 @@ int SendHello(int socket)
 	struct wsdd__HelloType *pWsdd__HelloType = malloc(sizeof(struct wsdd__HelloType));	
 	struct soap *pSoap=malloc(sizeof(struct soap));
 	soap_init(pSoap);
-
+	
 	pSoap->fsend = mysend;
 
 	// Build SOAP Header
@@ -145,8 +197,7 @@ int SendHello(int socket)
 	pWsdd__HelloType->Scopes->__item = CopyString("onvif://www.onvif.org/Profile/Streaming");
 	pWsdd__HelloType->XAddrs = CopyString("444");
 	pWsdd__HelloType->MetadataVersion = 0;
-				   
-	
+		
 	soap_serializeheader(pSoap);
 
 	soap_response(pSoap, SOAP_OK);
@@ -213,6 +264,116 @@ int SendBye(int socket)
 	vErr = soap_put___wsdd__Bye(pSoap, pWsdd__Bye, "-wsdd:Bye", "wsdd:ByeType");
 	soap_body_end_out(pSoap);
 	soap_envelope_end_out(pSoap);
+	  
+	soap_destroy(pSoap);
+	soap_end(pSoap);
+	
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
+	
+	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	{
+		perror("Sending datagram message error");
+	}
+	else
+	  DBG("Sending datagram message...OK\n");	
+
+	clearBuffer();	  	
+		  
+	return SOAP_OK;
+}
+
+
+// 20130919
+int SendProbe(int socket)
+{
+	int vErr = 0;
+	struct __wsdd__Probe *pWsdd__Probe = malloc(sizeof(struct __wsdd__Probe));
+	struct wsdd__ProbeType *pWsdd__ProbeType = malloc(sizeof(struct wsdd__ProbeType));	
+	struct soap *pSoap=malloc(sizeof(struct soap));
+	soap_init(pSoap);
+
+	pSoap->fsend = mysend;
+
+	// Build SOAP Header
+	pSoap->header = (struct SOAP_ENV__Header *) malloc(sizeof(struct SOAP_ENV__Header));
+	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Hello");
+	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
+	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
+	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) malloc(sizeof(struct wsdd__AppSequenceType));
+	pSoap->header->wsdd__AppSequence->InstanceId = 1077004800;
+	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
+
+	// Build Hello Message
+	soap_default___wsdd__Probe(pSoap, pWsdd__Probe);
+	pSoap->encodingStyle = NULL;
+	
+	pWsdd__Probe->wsdd__Probe = pWsdd__ProbeType;   
+	pWsdd__ProbeType->Types = CopyString("tds:Device");
+	pWsdd__ProbeType->Scopes = malloc(sizeof(struct wsdd__ScopesType));
+	pWsdd__ProbeType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");; 
+	pWsdd__ProbeType->Scopes->__item = CopyString("onvif://www.onvif.org/Profile/Streaming");
+				   
+	
+	soap_serializeheader(pSoap);
+
+	soap_response(pSoap, SOAP_OK);
+	soap_envelope_begin_out(pSoap);
+	soap_putheader(pSoap);
+	soap_body_begin_out(pSoap);
+	vErr = soap_put___wsdd__Probe(pSoap, pWsdd__Probe, "-wsdd:Probe", "wsdd:ProbeType");
+	soap_body_end_out(pSoap);
+	soap_envelope_end_out(pSoap);
+	soap_end_send(pSoap);
+	
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
+	
+	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	{
+		perror("Sending datagram message error");
+	}
+	else
+	  DBG("Sending datagram message...OK\n");	
+	  
+	clearBuffer();
+	soap_destroy(pSoap);	  
+	return SOAP_OK;
+}
+
+int SendResolve(int socket)
+{
+	int vErr = 0;
+	struct __wsdd__Resolve *pWsdd__Resolve = malloc(sizeof(struct __wsdd__Resolve));
+	struct wsdd__ResolveType *pWsdd__ResolveType = malloc(sizeof(struct wsdd__ResolveType));	
+	struct soap *pSoap=malloc(sizeof(struct soap));
+	soap_init(pSoap);
+
+	pSoap->fsend = mysend;
+
+	// Build SOAP Header
+	pSoap->header = (struct SOAP_ENV__Header *) malloc(sizeof(struct SOAP_ENV__Header));
+	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Resolve");
+	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
+	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
+	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) malloc(sizeof(struct wsdd__AppSequenceType));
+	pSoap->header->wsdd__AppSequence->InstanceId = 1077004800;
+	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
+
+	// Build Resolve Message
+	soap_default___wsdd__Resolve(pSoap, pWsdd__Resolve);
+	pSoap->encodingStyle = NULL;
+	
+	pWsdd__Resolve->wsdd__Resolve = pWsdd__ResolveType;   
+  pWsdd__ResolveType->wsa5__EndpointReference.Address = CopyString("urn:uuid:98190dc2-0890-4ef8-ac9a-5940995e6119");	
+	
+	soap_serializeheader(pSoap);
+
+	soap_response(pSoap, SOAP_OK);
+	soap_envelope_begin_out(pSoap);
+	soap_putheader(pSoap);
+	soap_body_begin_out(pSoap);
+	vErr = soap_put___wsdd__Resolve(pSoap, pWsdd__Resolve, "-wsdd:Resolve", "wsdd:ResolveType");
+	soap_body_end_out(pSoap);
+	soap_envelope_end_out(pSoap);
 
 	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
 	
@@ -226,9 +387,7 @@ int SendBye(int socket)
 	clearBuffer();
 	soap_destroy(pSoap);	  
 	return SOAP_OK;
-	
 }
-
 
 // Utilities of Network
 int getMyIp(void)
@@ -274,11 +433,7 @@ int CreateMulticastClient(void)
 {
 	// http://www.tenouk.com/Module41c.html
 	struct in_addr localInterface;
-	
 	int sd;
-	
-	char databuf[1024] = "Multicast test message lol!";
-	int datalen = sizeof(databuf);
 	
 	sd = socket(AF_INET, SOCK_DGRAM, 0);
 	if(sd < 0)
@@ -312,9 +467,6 @@ int CreateMulticastServer(void)
 	struct sockaddr_in localSock;
 	int sd;
 	
-	char databuf[1024] = "Multicast test message lol!";
-	int datalen = sizeof(databuf);
-	
 	sd = socket(AF_INET, SOCK_DGRAM, 0);
 	if(sd < 0)
 	{
@@ -338,8 +490,8 @@ int CreateMulticastServer(void)
 
 	memset((char *) &localSock, 0, sizeof(localSock));
 	localSock.sin_family = AF_INET;
-	localSock.sin_port = htons(4321);
-	localSock.sin_addr.s_addr = INADDR_ANY;
+	localSock.sin_port = htons(MULTICAST_PORT);
+	localSock.sin_addr.s_addr = INADDR_ANY;//inet_addr(LOCAL_ADDR);
 	if(bind(sd, (struct sockaddr*)&localSock, sizeof(localSock)))
 	{
 		perror("Binding datagram socket error");
@@ -366,29 +518,44 @@ int CreateMulticastServer(void)
 // Receive Multicast request and send unicast response (Probe and Resolve)
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__ProbeMatches(struct soap *pSoap, struct wsdd__ProbeMatchesType *wsdd__ProbeMatches)
 {
-	printf("__wsdd__ProbeMatches\n");
-	return SOAP_FAULT;
+	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	return SOAP_OK;
 }
 
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__ResolveMatches(struct soap *pSoap, struct wsdd__ResolveMatchesType *wsdd__ResolveMatches)
 {
-	printf("__wsdd__ResolveMatches\n");
-	return SOAP_FAULT;
+	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	return SOAP_OK;
 }
 
 
 // Unused callback function
 SOAP_FMAC5 int SOAP_FMAC6 SOAP_ENV__Fault(struct soap *pSoap, char *faultcode, char *faultstring, char *faultactor, struct SOAP_ENV__Detail *detail, struct SOAP_ENV__Code *SOAP_ENV__Code, struct SOAP_ENV__Reason *SOAP_ENV__Reason, char *SOAP_ENV__Node, char *SOAP_ENV__Role, struct SOAP_ENV__Detail *SOAP_ENV__Detail)
-{return SOAP_FAULT;}
+{
+	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	return SOAP_OK;
+}
 
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Hello(struct soap *pSoap, struct wsdd__HelloType *wsdd__Hello)
-{return SOAP_FAULT;}
+{
+	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	return SOAP_OK;
+}
 
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Bye(struct soap *pSoap, struct wsdd__ByeType *wsdd__Bye)
-{return SOAP_FAULT;}
+{
+	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	return SOAP_OK;
+}
 
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeType *wsdd__Probe)
-{return SOAP_FAULT;}
+{
+	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	return SOAP_OK;
+}
 
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Resolve(struct soap *pSoap, struct wsdd__ResolveType *wsdd__Resolve)
-{return SOAP_FAULT;}
+{
+	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	return SOAP_OK;
+}
