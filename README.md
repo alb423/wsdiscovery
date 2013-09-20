@@ -15,3 +15,6 @@ WS-Discovery implementation for ONVIF device
       ./wsdiscovery<br \>
    Client: <br \>
       ./ws-client 2  <br \>
+
+http://albert-oma.blogspot.tw/2013/09/onvif-ws-discovery-implementation.html
+http://albert-oma.blogspot.tw/2013/09/onvif-ws-discovery-spec.html (A Introduction is Chinese)
