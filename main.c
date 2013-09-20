@@ -26,17 +26,27 @@ char gpLocalAddr[32]={0};
 
 char * CopyString(char *pSrc);
 int getMyIp(void);
+
 int CreateMulticastClient(int port);
 int CreateMulticastServer(void);
+int CreateUnicastClient(struct sockaddr_in *pSockAddr);
+
+// Below 4 message is send as multicast packet
 int SendHello(int socket);
 int SendBye(int socket);
 int SendProbe(int socket);
 int SendResolve(int socket);
-int SendProbeMatches(int socket);
-int SendResolveMatches(int socket);
+
+// The response should be send to the multicast sender as unicast packet
+int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In);
+int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In);
+
+
 void * MyMalloc(int vSize);
 
 struct sockaddr_in gMSockAddr;
+//struct sockaddr_in gSockAddr;
+
 char pBuffer[10000]; // XML buffer 
 int  vBufLen = 0; 
 
@@ -82,13 +92,43 @@ int main(int argc, char **argv)
 				}
 				else if(strcmp(argv[1],"2")==0)
 				{
+					int vReciveLen=0;
+					struct sockaddr_in vxSockAddr;
+					SOAP_SOCKLEN_T vSockLen = (SOAP_SOCKLEN_T)sizeof(vxSockAddr);
+					memset((void*)&vxSockAddr, 0, sizeof(vxSockAddr));
+					
+					
 					usleep(500000);
 					SendProbe(msocket_cli); 
+					
+					
+					fprintf(stderr, "Waiting Response\n");
+					
+					vBufLen = sizeof(pBuffer);
+					vReciveLen = recvfrom(msocket_cli, pBuffer, (SOAP_WINSOCKINT)vBufLen, MSG_WAITALL, (struct sockaddr*)&vxSockAddr, &vSockLen);
+					fprintf(stderr, "got Response, vReciveLen=%d, \n", vReciveLen);
+					fprintf(stderr, "msocket_cli=%d, rsp s_addr=%s, rsp sin_port=%d\n", msocket_cli, inet_ntoa(vxSockAddr.sin_addr), htons(vxSockAddr.sin_port));
+					fprintf(stderr, "Buf=%s\n", pBuffer);
 				}					
 				else if(strcmp(argv[1],"3")==0)
 				{
+					int vErr=0;
+					struct sockaddr_in vxSockAddr;
+					SOAP_SOCKLEN_T vSockLen = (SOAP_SOCKLEN_T)sizeof(vxSockAddr);
+					memset((void*)&vxSockAddr, 0, sizeof(vxSockAddr));
+					
+					
 					usleep(500000);
 					SendResolve(msocket_cli); 
+					
+					
+					fprintf(stderr, "Waiting Response\n");
+					
+					vBufLen = sizeof(pBuffer);
+					vErr = recvfrom(msocket_cli, pBuffer, (SOAP_WINSOCKINT)vBufLen, MSG_WAITALL, (struct sockaddr*)&vxSockAddr, &vSockLen);
+					fprintf(stderr, "got Response, vErr=%d, \n", vErr);
+					fprintf(stderr, "msocket_cli=%d, rsp s_addr=%s, rsp sin_port=%d\n", msocket_cli, inet_ntoa(vxSockAddr.sin_addr), htons(vxSockAddr.sin_port));
+					fprintf(stderr, "Buf=%s\n", pBuffer);					
 				}					
 				else if(strcmp(argv[1],"4")==0)
 				{
@@ -96,16 +136,15 @@ int main(int argc, char **argv)
 					SendBye(msocket_cli); 
 				}
 				else if(strcmp(argv[1],"5")==0)
-				{
+				{	
 					usleep(500000);
-					SendProbeMatches(msocket_cli); 
+					SendProbeMatches(msocket_cli, &gMSockAddr);
 				}					
 				else if(strcmp(argv[1],"6")==0)
 				{
 					usleep(500000);
-					SendResolveMatches(msocket_cli); 
+					SendResolveMatches(msocket_cli, &gMSockAddr); 
 				}													
-				
 			}
 			else
 			{
@@ -116,15 +155,16 @@ int main(int argc, char **argv)
 		}
 	}
 	
-	msocket_cli = CreateMulticastClient(MULTICAST_PORT+1);
+	msocket_cli = CreateMulticastClient(MULTICAST_PORT);
 	msocket_srv = CreateMulticastServer();
 	
 	// Handle Probe and Resolve request
 	pSoap = MyMalloc(sizeof(struct soap));
-	soap_init(pSoap);
+	soap_init1(pSoap, SOAP_IO_UDP);
 	
-	pSoap->sendfd = msocket_cli;
-	pSoap->recvfd = msocket_srv;
+	//pSoap->sendfd = msocket_cli;
+	//pSoap->recvfd = msocket_srv;
+	pSoap->recvsk = msocket_srv;
 			
 	while(1)
 	{
@@ -412,7 +452,7 @@ int SendResolve(int socket)
 }
 
 
-int SendProbeMatches(int socket)//struct soap *pSoap)
+int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In)
 {	
 	int vErr = 0;
 	struct __wsdd__ProbeMatches *pwsdd__ProbeMatches = MyMalloc(sizeof(struct __wsdd__ProbeMatches));
@@ -463,7 +503,7 @@ int SendProbeMatches(int socket)//struct soap *pSoap)
 		
 	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
 	
-	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)pSockAddr_In, sizeof(struct sockaddr_in)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
@@ -475,7 +515,7 @@ int SendProbeMatches(int socket)//struct soap *pSoap)
 	return SOAP_OK;
 }
 
-int SendResolveMatches(int socket)
+int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In)
 {
 	int vErr = 0;
 	struct __wsdd__ResolveMatches *pwsdd__ResolveMatches = MyMalloc(sizeof(struct __wsdd__ResolveMatches));
@@ -518,7 +558,7 @@ int SendResolveMatches(int socket)
 		
 	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
 	
-	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)pSockAddr_In, sizeof(*pSockAddr_In)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
@@ -568,6 +608,33 @@ int getMyIp(void)
     
     if (ifAddrStruct!=NULL) freeifaddrs(ifAddrStruct);
     return 0;
+}
+
+
+int CreateUnicastClient(struct sockaddr_in *pSockAddr)
+{
+	// http://www.tenouk.com/Module41c.html
+	struct in_addr localInterface;
+	int sd;
+	
+	sd = socket(AF_INET, SOCK_DGRAM, 0);
+	if(sd < 0)
+	{
+	  perror("Opening datagram socket error");
+	  exit(1);
+	}
+	else
+	  DBG("Opening the datagram socket...OK.\n");
+
+			
+	fprintf(stderr,"sock=%d, s_addr=%s, sin_port=%d\n", sd, inet_ntoa(pSockAddr->sin_addr), htons(pSockAddr->sin_port));	
+	
+//	memset((char *) &gSockAddr, 0, sizeof(gSockAddr));
+//	gSockAddr.sin_family = AF_INET;
+//	gSockAddr.sin_addr = pSockAddr->sin_addr;
+//	gSockAddr.sin_port = pSockAddr->sin_port;
+	  
+	return sd;
 }
 
 
@@ -660,9 +727,11 @@ int CreateMulticastServer(void)
 // Receive Multicast request and send unicast response (Probe and Resolve)
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeType *wsdd__Probe)
 {
+	int vSocket=-1;
 	fprintf(stderr, "%s %s :%d sendfd=%d\n",__FILE__,__func__, __LINE__, pSoap->sendfd);
 #if 0	
 	fprintf(stderr, "\n======\n");
+	fprintf(stderr, "vLen=%zd, buf=\n%s\n", pSoap->buflen,pSoap->buf);
 	if(wsdd__Probe->Types)
 		fprintf(stderr, "Types=%s\n",wsdd__Probe->Types);	
 	if(wsdd__Probe->Scopes)
@@ -673,14 +742,27 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 	fprintf(stderr, "======\n\n");
 #endif	
 
-	SendProbeMatches(pSoap->sendfd);
+#if 0
+	//fprintf(stderr, "socket=%d, sendsk=%d, recvsk=%d, recvfd=%d, sendfd=%d\n",pSoap->socket,pSoap->sendsk,pSoap->recvsk,pSoap->recvfd,pSoap->sendfd);
+	{		
+		fprintf(stderr,"sin_addr.s_addr=%s, sin_port=%d\n", inet_ntoa(pSoap->peer.sin_addr), pSoap->peer.sin_port);	
+		fprintf(stderr,"soap->ip=%ld\n",pSoap->ip);
+	}
+#endif	
+	
+	// For IPv4 only
+	vSocket = CreateUnicastClient(&pSoap->peer);
+	SendProbeMatches(vSocket, &pSoap->peer);
 	return SOAP_OK;
 }
 
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Resolve(struct soap *pSoap, struct wsdd__ResolveType *wsdd__Resolve)
 {
+	int vSocket=-1;	
 	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
-	SendResolveMatches(pSoap->sendfd);
+
+	vSocket = CreateUnicastClient(&pSoap->peer);
+	SendResolveMatches(vSocket, &pSoap->peer);
 	return SOAP_OK;
 }
 
