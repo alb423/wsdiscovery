@@ -7,11 +7,11 @@ WS-Discovery implementation for ONVIF device
 
 2. only implement local discovery.
 
-3. Build command
-   make
+3. Build command <br \>
+   make<br \>
 
-4. Execute method
-   Server side 
-      ./wsdiscovery
-   Client: 
-      ./ws-client 2  
+4. Execute method <br \>
+   Server side <br \>
+      ./wsdiscovery<br \>
+   Client: <br \>
+      ./ws-client 2  <br \>
