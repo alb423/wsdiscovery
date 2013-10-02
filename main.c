@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 			return _server(argc, argv);
 		}		
 	}
-
+	return 1;
 }
 
 int _server(int argc, char **argv)
@@ -75,15 +75,16 @@ int _server(int argc, char **argv)
 		if(pSoap->header)
 		{
 			fprintf(stderr, "%s %s :%d Action = %s\n",__FILE__,__func__, __LINE__, pSoap->header->wsa5__Action);
-			if(strstr(pSoap->header->wsa5__Action,"Bye")!=NULL)
+			if(strstr(pSoap->header->wsa5__Action,"fault")!=NULL)
 			{
-				// exit the loop when receive bye
+				// exit the loop when receive fault
 				break;
 			}
 		}
 	}
 	close(msocket_cli);
 	close(msocket_srv);
+	return 1;
 }
 
 int _client(int argc, char **argv)
@@ -156,7 +157,12 @@ int _client(int argc, char **argv)
 		{
 			usleep(500000);
 			SendResolveMatches(msocket_cli, &gMSockAddr); 
-		}													
+		}			
+		else if(strcmp(argv[1],"7")==0)
+		{
+			usleep(500000);
+			SendFault(msocket_cli); 
+		}																
 	}
 	else
 	{

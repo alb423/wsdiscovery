@@ -10,6 +10,7 @@ extern int SendHello(int socket);
 extern int SendBye(int socket);
 extern int SendProbe(int socket);
 extern int SendResolve(int socket);
+extern int SendFault(int socket);
 
 // The response should be send to the multicast sender as unicast packet
 extern int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In);

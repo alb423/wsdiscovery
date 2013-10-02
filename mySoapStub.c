@@ -38,15 +38,15 @@ int SendHello(int socket)
 	pSoap->encodingStyle = NULL;
 	
 	pWsdd__Hello->wsdd__Hello = pWsdd__HelloType;   
-	pWsdd__HelloType->wsa5__EndpointReference.Address = nativeGetUUID();
+	pWsdd__HelloType->wsa5__EndpointReference.Address = nativeGetEndpointAddress();
 	pWsdd__HelloType->Types = nativeGetTypes();
 	
 	// TODO: we can have many scopes 
 	pWsdd__HelloType->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
 	pWsdd__HelloType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");; 
-	pWsdd__HelloType->Scopes->__item = CopyString("onvif://www.onvif.org/Profile/Streaming");
-	pWsdd__HelloType->XAddrs = nativeGetUUID();
-	pWsdd__HelloType->MetadataVersion = 0;
+	pWsdd__HelloType->Scopes->__item = nativeGetScopes();
+	pWsdd__HelloType->XAddrs = nativeGetXAddrs();
+	pWsdd__HelloType->MetadataVersion = nativeGetMetadataVersion();
 		
 	soap_serializeheader(pSoap);
 
@@ -100,13 +100,14 @@ int SendBye(int socket)
 	pSoap->encodingStyle = NULL;
 	
 	pWsdd__Bye->wsdd__Bye = pWsdd__ByeType;   
-	pWsdd__ByeType->wsa5__EndpointReference.Address = nativeGetUUID();
+	pWsdd__ByeType->wsa5__EndpointReference.Address = nativeGetEndpointAddress();
 	pWsdd__ByeType->Types = nativeGetTypes();
 	pWsdd__ByeType->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
 	pWsdd__ByeType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");; 
-	pWsdd__ByeType->Scopes->__item = CopyString("onvif://www.onvif.org/Profile/Streaming");
-	pWsdd__ByeType->XAddrs = nativeGetUUID();
-	pWsdd__ByeType->MetadataVersion = 0;
+	pWsdd__ByeType->Scopes->__item = nativeGetScopes();
+	pWsdd__ByeType->XAddrs = nativeGetXAddrs();
+	pWsdd__ByeType->MetadataVersion = MyMalloc(sizeof(int));
+	*pWsdd__ByeType->MetadataVersion = nativeGetMetadataVersion();
 				   
 	
 	soap_serializeheader(pSoap);
@@ -167,7 +168,7 @@ int SendProbe(int socket)
 	pWsdd__ProbeType->Types = nativeGetTypes();
 	pWsdd__ProbeType->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
 	pWsdd__ProbeType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");; 
-	pWsdd__ProbeType->Scopes->__item = CopyString("onvif://www.onvif.org/Profile/Streaming");
+	pWsdd__ProbeType->Scopes->__item = nativeGetScopes();
 				   
 	
 	soap_serializeheader(pSoap);
@@ -222,7 +223,7 @@ int SendResolve(int socket)
 	pSoap->encodingStyle = NULL;
 	
 	pWsdd__Resolve->wsdd__Resolve = pWsdd__ResolveType;   
-  pWsdd__ResolveType->wsa5__EndpointReference.Address = nativeGetUUID();
+  pWsdd__ResolveType->wsa5__EndpointReference.Address = nativeGetEndpointAddress();
 	
 	soap_serializeheader(pSoap);
 
@@ -277,7 +278,7 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In)
 
 	pSoap->header->wsa5__ReplyTo = MyMalloc(sizeof(struct wsa5__EndpointReferenceType));
 	memset(pSoap->header->wsa5__ReplyTo, 0, sizeof(struct wsa5__EndpointReferenceType));
-	pSoap->header->wsa5__ReplyTo->Address = nativeGetUUID();
+	pSoap->header->wsa5__ReplyTo->Address = nativeGetEndpointAddress();
 	
 	// Build ProbeMatch Message
 	soap_default___wsdd__ProbeMatches(pSoap, pwsdd__ProbeMatches);
@@ -287,8 +288,8 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In)
 	pwsdd__ProbeMatches->wsdd__ProbeMatches = pwsdd__ProbeMatchesType;   
 	pwsdd__ProbeMatchesType->__sizeProbeMatch = 1;
 	pwsdd__ProbeMatchesType->ProbeMatch = MyMalloc(sizeof(struct wsdd__ProbeMatchType));
-	pwsdd__ProbeMatchesType->ProbeMatch->wsa5__EndpointReference.Address = nativeGetUUID();
-	pwsdd__ProbeMatchesType->ProbeMatch->MetadataVersion = 1234;
+	pwsdd__ProbeMatchesType->ProbeMatch->wsa5__EndpointReference.Address = nativeGetEndpointAddress();
+	pwsdd__ProbeMatchesType->ProbeMatch->MetadataVersion = nativeGetMetadataVersion();
 				   
 	soap_serializeheader(pSoap);
 
@@ -344,8 +345,8 @@ int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In)
 	
 	pwsdd__ResolveMatches->wsdd__ResolveMatches = pwsdd__ResolveMatchesType;   
 	pwsdd__ResolveMatchesType->ResolveMatch = MyMalloc(sizeof(struct wsdd__ResolveMatchType));	
-	pwsdd__ResolveMatchesType->ResolveMatch->wsa5__EndpointReference.Address = nativeGetUUID();
-	pwsdd__ResolveMatchesType->ResolveMatch->MetadataVersion = 1234;
+	pwsdd__ResolveMatchesType->ResolveMatch->wsa5__EndpointReference.Address = nativeGetEndpointAddress();
+	pwsdd__ResolveMatchesType->ResolveMatch->MetadataVersion = nativeGetMetadataVersion();
 				   
 	soap_serializeheader(pSoap);
 
@@ -376,7 +377,63 @@ int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In)
 	return SOAP_OK;
 }
 
+int SendFault(int socket)
+{
+	int vErr = 0;
+	struct SOAP_ENV__Fault *pFault = MyMalloc(sizeof(struct SOAP_ENV__Fault));
+	struct soap *pSoap=MyMalloc(sizeof(struct soap));
+	soap_init1(pSoap,SOAP_IO_UDP);
 
+	pSoap->fsend = mysend;
+
+	// Build SOAP Header
+	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
+	pSoap->header->wsa5__Action = CopyString("http://schemas.xmlsoap.org/ws/2005/04/discovery/fault");
+	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
+	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
+	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
+	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
+	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
+
+	// Build Fault Message
+	pFault->SOAP_ENV__Code = (struct SOAP_ENV__Code*)MyMalloc(sizeof(struct SOAP_ENV__Code));
+	pFault->SOAP_ENV__Code->SOAP_ENV__Value = CopyString("SOAP-ENV:Sender");
+	pFault->SOAP_ENV__Code->SOAP_ENV__Subcode = (struct SOAP_ENV__Code*)MyMalloc(sizeof(struct SOAP_ENV__Code));
+	pFault->SOAP_ENV__Code->SOAP_ENV__Subcode->SOAP_ENV__Value = CopyString("d:MatchingRuleNotSupported");
+	pFault->SOAP_ENV__Code->SOAP_ENV__Subcode->SOAP_ENV__Subcode = NULL;
+	
+	pFault->SOAP_ENV__Reason = (struct SOAP_ENV__Reason*)MyMalloc(sizeof(struct SOAP_ENV__Reason));
+	pFault->SOAP_ENV__Reason->SOAP_ENV__Text = CopyString("the matching rule specified is not supported");
+	
+	soap_serializeheader(pSoap);
+
+	soap_response(pSoap, SOAP_FAULT);
+	soap_envelope_begin_out(pSoap);
+	soap_putheader(pSoap);
+	soap_body_begin_out(pSoap);
+	
+	vErr = soap_put_SOAP_ENV__Fault(pSoap, pFault, "SOAP-ENV:Fault", "SOAP-ENV:Fault");
+	
+	soap_body_end_out(pSoap);
+	soap_envelope_end_out(pSoap);
+	soap_end_send(pSoap);
+	soap_destroy(pSoap);
+	soap_end(pSoap);
+		
+	char *pBuffer = getXmlBufferData();
+	int vBufLen = strlen(pBuffer);		
+	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
+	
+	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	{
+		perror("Sending datagram message error");
+	}
+	else
+	  DBG("Sending datagram message...OK\n");	
+	  
+	clearXmlBuffer();	  
+	return SOAP_OK;
+}
 
 
 // Receive Multicast request and send unicast response (Probe and Resolve)
