@@ -17,7 +17,7 @@
 
 // Network
 extern struct sockaddr_in gMSockAddr;
-extern int getMyIp(void);
+extern char* getMyIpString(void);
 extern int CreateMulticastClient(int port);
 extern int CreateMulticastServer(void);
 extern int CreateUnicastClient(struct sockaddr_in *pSockAddr);
@@ -30,6 +30,13 @@ extern char* getXmlBufferData(void);
 
 extern void * MyMalloc(int vSize);
 extern char * CopyString(char *pSrc);
+
+
+extern int match_rfc3986(char *pItem);
+extern int match_uuid(char *pItem);
+extern int match_ldap(char *pItem);
+extern int match_strcmp0(char *pItem);
+extern int match_none(char *pItem);
 
 #endif
 

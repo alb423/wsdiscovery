@@ -41,7 +41,6 @@ int SendHello(int socket)
 	pWsdd__HelloType->wsa5__EndpointReference.Address = nativeGetEndpointAddress();
 	pWsdd__HelloType->Types = nativeGetTypes();
 	
-	// TODO: we can have many scopes 
 	pWsdd__HelloType->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
 	pWsdd__HelloType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");; 
 	pWsdd__HelloType->Scopes->__item = nativeGetScopes();
@@ -167,10 +166,14 @@ int SendProbe(int socket)
 	pWsdd__Probe->wsdd__Probe = pWsdd__ProbeType;   
 	pWsdd__ProbeType->Types = nativeGetTypes();
 	pWsdd__ProbeType->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
-	pWsdd__ProbeType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");; 
-	pWsdd__ProbeType->Scopes->__item = nativeGetScopes();
-				   
-	
+	pWsdd__ProbeType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
+	#if 1
+		pWsdd__ProbeType->Scopes->__item = nativeGetScopes();
+	#else
+		// Test for invalid scope
+		pWsdd__ProbeType->Scopes->__item = CopyString("undefinedScope");
+	#endif
+	   
 	soap_serializeheader(pSoap);
 
 	soap_response(pSoap, SOAP_OK);
@@ -284,7 +287,6 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In)
 	soap_default___wsdd__ProbeMatches(pSoap, pwsdd__ProbeMatches);
 	pSoap->encodingStyle = NULL;
 	
-	// TODO: make a real match procedure
 	pwsdd__ProbeMatches->wsdd__ProbeMatches = pwsdd__ProbeMatchesType;   
 	pwsdd__ProbeMatchesType->__sizeProbeMatch = 1;
 	pwsdd__ProbeMatchesType->ProbeMatch = MyMalloc(sizeof(struct wsdd__ProbeMatchType));
@@ -377,7 +379,7 @@ int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In)
 	return SOAP_OK;
 }
 
-int SendFault(int socket)
+int SendFault(int socket, struct sockaddr_in *pSockAddr_In)
 {
 	int vErr = 0;
 	struct SOAP_ENV__Fault *pFault = MyMalloc(sizeof(struct SOAP_ENV__Fault));
@@ -424,7 +426,7 @@ int SendFault(int socket)
 	int vBufLen = strlen(pBuffer);		
 	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
 	
-	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
+	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)pSockAddr_In, sizeof(*pSockAddr_In)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
@@ -435,12 +437,13 @@ int SendFault(int socket)
 	return SOAP_OK;
 }
 
-
 // Receive Multicast request and send unicast response (Probe and Resolve)
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeType *wsdd__Probe)
 {
 	int vSocket=-1;
+	int bScopeValid=1;
 	fprintf(stderr, "%s %s :%d sendfd=%d\n",__FILE__,__func__, __LINE__, pSoap->sendfd);
+	
 #if 0	
 	fprintf(stderr, "\n======\n");
 	fprintf(stderr, "vLen=%zd, buf=\n%s\n", pSoap->buflen,pSoap->buf);
@@ -454,27 +457,83 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 	fprintf(stderr, "======\n\n");
 #endif	
 
-#if 0
-	//fprintf(stderr, "socket=%d, sendsk=%d, recvsk=%d, recvfd=%d, sendfd=%d\n",pSoap->socket,pSoap->sendsk,pSoap->recvsk,pSoap->recvfd,pSoap->sendfd);
-	{		
-		fprintf(stderr,"sin_addr.s_addr=%s, sin_port=%d\n", inet_ntoa(pSoap->peer.sin_addr), pSoap->peer.sin_port);	
-		fprintf(stderr,"soap->ip=%ld\n",pSoap->ip);
+	if(wsdd__Probe->Scopes)
+	{
+		if(wsdd__Probe->Scopes->__item)
+		{
+			if(wsdd__Probe->Scopes->MatchBy)
+			{
+				if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986")==0)
+				{
+					bScopeValid = match_rfc3986(wsdd__Probe->Scopes->__item);
+				}
+				else if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/uuid")==0)
+				{
+					bScopeValid = match_uuid(wsdd__Probe->Scopes->__item);
+				}
+				else if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/ldap")==0)
+				{
+					bScopeValid = match_ldap(wsdd__Probe->Scopes->__item);
+				}
+				else if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/strcmp0")==0)
+				{
+					bScopeValid = match_strcmp0(wsdd__Probe->Scopes->__item);
+				}						
+				else if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/none")==0)
+				{
+					bScopeValid = match_none(wsdd__Probe->Scopes->__item);
+				}											
+			}
+			else
+			{
+				// If there is no MatchBy in Scope Tag
+				// The default match is http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986
+				bScopeValid = match_rfc3986(wsdd__Probe->Scopes->__item);	
+			}
+		}
 	}
-#endif	
 	
 	// For IPv4 only
 	vSocket = CreateUnicastClient(&pSoap->peer);
-	SendProbeMatches(vSocket, &pSoap->peer);
+	if(bScopeValid)
+	{
+		SendProbeMatches(vSocket, &pSoap->peer);
+	}
+	else
+	{
+		SendFault(vSocket, &pSoap->peer);
+	}
 	return SOAP_OK;
 }
 
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Resolve(struct soap *pSoap, struct wsdd__ResolveType *wsdd__Resolve)
 {
 	int vSocket=-1;	
+	int bResolveValid=1;
+		
 	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
 
+	// Check peer for ad hoc mode or managed mode
+	if(wsdd__Resolve)
+	{
+		if(wsdd__Resolve->wsa5__EndpointReference.Address)
+		{
+			// TODO: Check if resolve match;
+			
+		}
+	}
+	
+	
 	vSocket = CreateUnicastClient(&pSoap->peer);
-	SendResolveMatches(vSocket, &pSoap->peer);
+	if(bResolveValid)
+	{
+		SendResolveMatches(vSocket, &pSoap->peer);
+	}
+	else
+	{
+		SendFault(vSocket, &pSoap->peer);
+	}
+		
 	return SOAP_OK;
 }
 

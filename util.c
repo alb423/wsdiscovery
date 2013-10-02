@@ -12,6 +12,7 @@
 
 #include "util.h"
 #include "soapH.h"
+#include "porting.h"
 
 char gpLocalAddr[32]={0};
 #define LOCAL_ADDR gpLocalAddr//"192.168.2.102"
@@ -70,7 +71,7 @@ char * CopyString(char *pSrc)
 
 
 // Utilities of Network
-int getMyIp(void)
+char * getMyIpString(void)
 {
     struct ifaddrs * ifAddrStruct=NULL;
     struct ifaddrs * ifa=NULL;
@@ -105,7 +106,7 @@ int getMyIp(void)
     printf("gpLocalAddr is set to %s\n\n", gpLocalAddr);
     
     if (ifAddrStruct!=NULL) freeifaddrs(ifAddrStruct);
-    return 0;
+    return gpLocalAddr;
 }
 
 
@@ -221,3 +222,49 @@ int CreateMulticastServer(void)
 
 	return sd;
 }
+
+int match_rfc3986(char *pItem)
+{ 
+	char *pSystemScopes = nativeGetScopes();
+	if(strstr(pSystemScopes,pItem))
+		return 1;
+	else 
+		return 0;
+}
+
+int match_uuid(char *pItem)
+{ 
+	char *pSystemScopes = nativeGetScopes();
+	if(strstr(pSystemScopes,pItem))
+		return 1;
+	else 
+		return 0;
+}
+
+int match_ldap(char *pItem)
+{ 
+	char *pSystemScopes = nativeGetScopes();
+	if(strstr(pSystemScopes,pItem))
+		return 1;
+	else 
+		return 0;
+}
+
+int match_strcmp0(char *pItem)
+{ 
+	char *pSystemScopes = nativeGetScopes();
+	if(strstr(pSystemScopes,pItem))
+		return 1;
+	else 
+		return 0;
+}
+
+int match_none(char *pItem)
+{ 
+	char *pSystemScopes = nativeGetScopes();
+	if(strstr(pSystemScopes,pItem))
+		return 1;
+	else 
+		return 0;
+}
+							

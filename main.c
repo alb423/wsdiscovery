@@ -53,9 +53,10 @@ int main(int argc, char **argv)
 int _server(int argc, char **argv)
 {
 	int msocket_cli = 0, msocket_srv = 0;	
+	char *pAddress=NULL;
 	struct soap* pSoap = NULL;
 	
-	getMyIp();	
+	pAddress = getMyIpString();	
 	msocket_cli = CreateMulticastClient(MULTICAST_PORT);
 	msocket_srv = CreateMulticastServer();
 	
@@ -91,10 +92,11 @@ int _client(int argc, char **argv)
 {
 	int vLen = 0, vExecutableLen = 0;
 	int msocket_cli = 0, msocket_srv = 0;
+	char *pAddress=NULL;
 	int vDataLen = 1024*5;
 	char pDataBuf[1024*5];
 	
-	getMyIp();
+	pAddress = getMyIpString();
 	msocket_cli = CreateMulticastClient(MULTICAST_PORT);
 	if(argc==2)
 	{
@@ -161,7 +163,7 @@ int _client(int argc, char **argv)
 		else if(strcmp(argv[1],"7")==0)
 		{
 			usleep(500000);
-			SendFault(msocket_cli); 
+			SendFault(msocket_cli, &gMSockAddr); 
 		}																
 	}
 	else

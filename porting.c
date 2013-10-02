@@ -10,10 +10,14 @@
 #include <unistd.h>
 
 #include "util.h"
-;
+
 char *nativeGetXAddrs()
 {
-	return CopyString("urn:uuid:98190dc2-0890-4ef8-ac9a-5940995e6119");
+	char pTmp[1024] = {0};
+	
+	sprintf(pTmp, "http://%s:80/", getMyIpString());
+	printf("pTmp=%s\n",pTmp);
+	return CopyString(pTmp);
 }
 
 char *nativeGetEndpointAddress()
