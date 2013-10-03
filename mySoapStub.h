@@ -14,7 +14,7 @@ extern int SendFault(int socket, struct sockaddr_in *pSockAddr_In);
 
 
 // The response should be send to the multicast sender as unicast packet
-extern int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In);
-extern int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In);
+extern int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSenderMsgId);
+extern int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSenderMsgId);
 
 #endif

@@ -1,13 +1,16 @@
 #include <stdio.h>
-#include <time.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
+#include <sys/ioctl.h>
 #include <netinet/in.h>
+#include <net/if.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+
 #include <ifaddrs.h>
-#include <unistd.h>
 
 
 #include "util.h"
@@ -15,6 +18,7 @@
 #include "porting.h"
 
 char gpLocalAddr[32]={0};
+char gpMacAddr[32]={0};
 #define LOCAL_ADDR gpLocalAddr//"192.168.2.102"
 
 struct sockaddr_in gMSockAddr;
@@ -62,17 +66,22 @@ char * CopyString(char *pSrc)
 	if(!pSrc) return NULL;
 		
 	vLen = strlen(pSrc);
-	pDst = MyMalloc(vLen);	
-	memset(pDst, 0, vLen);
+	pDst = MyMalloc(vLen+1);	
+	memset(pDst, 0, vLen+1);
 	memcpy(pDst, pSrc, vLen);
 	
 	return pDst;
 }
 
+char * getMyMacAddress(void)
+{
+	return CopyString(gpMacAddr);
+}
 
 // Utilities of Network
 char * getMyIpString(void)
 {
+		char pInterface[128]={0};
     struct ifaddrs * ifAddrStruct=NULL;
     struct ifaddrs * ifa=NULL;
     void * tmpAddrPtr=NULL;
@@ -91,6 +100,10 @@ char * getMyIpString(void)
             
             // Note: you may set local address for different interface. For example:eth0, eth1
 		        memcpy(gpLocalAddr, addressBuffer, strlen(addressBuffer));
+		        memset(pInterface, 0 ,128);
+		        memcpy(pInterface, ifa->ifa_name, strlen(ifa->ifa_name));
+		        
+
         } 
         else if (ifa->ifa_addr->sa_family==AF_INET6) 
         { 	
@@ -103,8 +116,34 @@ char * getMyIpString(void)
         }         
     }
     
-    printf("gpLocalAddr is set to %s\n\n", gpLocalAddr);
-    
+    #if 0
+    {
+    	int sock;
+   		struct ifreq ifr;
+   		
+   		sock = socket(AF_INET, SOCK_DGRAM, 0);
+   		ifr.ifr_addr.sa_family= AF_INET;
+   		
+   		strncpy(ifr.ifr_name, pInterface, IFNAMSIZ-1);
+   		
+    	ioctl(sock, SIOCGIFHWADDR, &ifr);
+    	
+    	close(sock);
+    	
+    	sprintf(gpMacAddr, "%.2x%.2x%.2x%.2x%.2x%.2x", 
+    	(unsigned char)ifr.ifr_hwaddr.sa_data[0],
+    	(unsigned char)ifr.ifr_hwaddr.sa_data[1],
+    	(unsigned char)ifr.ifr_hwaddr.sa_data[2],
+    	(unsigned char)ifr.ifr_hwaddr.sa_data[3],
+    	(unsigned char)ifr.ifr_hwaddr.sa_data[4],
+    	(unsigned char)ifr.ifr_hwaddr.sa_data[5]);
+  	}
+  	#else
+  		sprintf(gpMacAddr, "10ddb1acc6ee");
+  	#endif
+  	
+  	
+    printf("gpLocalAddr is set to %s, MAC is %s\n\n", gpLocalAddr, gpMacAddr);    
     if (ifAddrStruct!=NULL) freeifaddrs(ifAddrStruct);
     return gpLocalAddr;
 }
@@ -115,7 +154,11 @@ int CreateUnicastClient(struct sockaddr_in *pSockAddr)
 	// http://www.tenouk.com/Module41c.html
 	struct in_addr localInterface;
 	int sd;
-	
+
+	struct timeval timeout;
+	timeout.tv_sec  = 10;
+	timeout.tv_usec = 0;
+		
 	sd = socket(AF_INET, SOCK_DGRAM, 0);
 	if(sd < 0)
 	{
@@ -125,14 +168,13 @@ int CreateUnicastClient(struct sockaddr_in *pSockAddr)
 	else
 	  DBG("Opening the datagram socket...OK.\n");
 
-			
+	if(setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+	{
+		DBG("setsockopt...error.\n");
+	}
+	
 	fprintf(stderr,"sock=%d, s_addr=%s, sin_port=%d\n", sd, inet_ntoa(pSockAddr->sin_addr), htons(pSockAddr->sin_port));	
 	
-//	memset((char *) &gSockAddr, 0, sizeof(gSockAddr));
-//	gSockAddr.sin_family = AF_INET;
-//	gSockAddr.sin_addr = pSockAddr->sin_addr;
-//	gSockAddr.sin_port = pSockAddr->sin_port;
-	  
 	return sd;
 }
 
@@ -143,6 +185,10 @@ int CreateMulticastClient(int port)
 	struct in_addr localInterface;
 	int sd;
 	
+	struct timeval timeout;
+	timeout.tv_sec  = 10;
+	timeout.tv_usec = 0;
+		
 	sd = socket(AF_INET, SOCK_DGRAM, 0);
 	if(sd < 0)
 	{
@@ -152,6 +198,11 @@ int CreateMulticastClient(int port)
 	else
 	  DBG("Opening the datagram socket %d...OK.\n", sd);
 
+	if(setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+	{
+		DBG("setsockopt...error.\n");
+	}
+	
 	memset((char *) &gMSockAddr, 0, sizeof(gMSockAddr));
 	gMSockAddr.sin_family = AF_INET;
 	gMSockAddr.sin_addr.s_addr = inet_addr(MULTICAST_ADDR);
@@ -225,7 +276,7 @@ int CreateMulticastServer(void)
 
 int match_rfc3986(char *pItem)
 { 
-	char *pSystemScopes = nativeGetScopes();
+	char *pSystemScopes = nativeGetScopesItem();
 	if(strstr(pSystemScopes,pItem))
 		return 1;
 	else 
@@ -234,7 +285,7 @@ int match_rfc3986(char *pItem)
 
 int match_uuid(char *pItem)
 { 
-	char *pSystemScopes = nativeGetScopes();
+	char *pSystemScopes = nativeGetScopesItem();
 	if(strstr(pSystemScopes,pItem))
 		return 1;
 	else 
@@ -243,7 +294,7 @@ int match_uuid(char *pItem)
 
 int match_ldap(char *pItem)
 { 
-	char *pSystemScopes = nativeGetScopes();
+	char *pSystemScopes = nativeGetScopesItem();
 	if(strstr(pSystemScopes,pItem))
 		return 1;
 	else 
@@ -252,7 +303,7 @@ int match_ldap(char *pItem)
 
 int match_strcmp0(char *pItem)
 { 
-	char *pSystemScopes = nativeGetScopes();
+	char *pSystemScopes = nativeGetScopesItem();
 	if(strstr(pSystemScopes,pItem))
 		return 1;
 	else 
@@ -261,7 +312,7 @@ int match_strcmp0(char *pItem)
 
 int match_none(char *pItem)
 { 
-	char *pSystemScopes = nativeGetScopes();
+	char *pSystemScopes = nativeGetScopesItem();
 	if(strstr(pSystemScopes,pItem))
 		return 1;
 	else 

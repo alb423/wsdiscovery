@@ -17,7 +17,8 @@
 
 // Network
 extern struct sockaddr_in gMSockAddr;
-extern char* getMyIpString(void);
+extern char * getMyIpString(void);
+extern char * getMyMacAddress(void);
 extern int CreateMulticastClient(int port);
 extern int CreateMulticastServer(void);
 extern int CreateUnicastClient(struct sockaddr_in *pSockAddr);

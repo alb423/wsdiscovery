@@ -17,9 +17,17 @@
 int SendHello(int socket)
 {
 	int vErr = 0;
-	struct __wsdd__Hello *pWsdd__Hello = MyMalloc(sizeof(struct __wsdd__Hello));
-	struct wsdd__HelloType *pWsdd__HelloType = MyMalloc(sizeof(struct wsdd__HelloType));	
-	struct soap *pSoap=MyMalloc(sizeof(struct soap));
+	struct __wsdd__Hello *pWsdd__Hello = NULL;
+	struct wsdd__HelloType *pWsdd__HelloType = NULL;	
+	struct soap *pSoap = NULL;
+	
+	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
+		return 0;
+
+	pWsdd__Hello = MyMalloc(sizeof(struct __wsdd__Hello));
+	pWsdd__HelloType = MyMalloc(sizeof(struct wsdd__HelloType));	
+	pSoap = MyMalloc(sizeof(struct soap));
+	
 	soap_init1(pSoap,SOAP_IO_UDP);
 	
 	pSoap->fsend = mysend;
@@ -27,8 +35,8 @@ int SendHello(int socket)
 	// Build SOAP Header
 	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
 	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Hello");
-	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
-	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
+	pSoap->header->wsa5__MessageID = nativeGetMessageId();
+	pSoap->header->wsa5__To = nativeGetTo();
 	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
 	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
@@ -43,7 +51,7 @@ int SendHello(int socket)
 	
 	pWsdd__HelloType->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
 	pWsdd__HelloType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");; 
-	pWsdd__HelloType->Scopes->__item = nativeGetScopes();
+	pWsdd__HelloType->Scopes->__item = nativeGetScopesItem();
 	pWsdd__HelloType->XAddrs = nativeGetXAddrs();
 	pWsdd__HelloType->MetadataVersion = nativeGetMetadataVersion();
 		
@@ -78,9 +86,17 @@ int SendHello(int socket)
 int SendBye(int socket)
 {
 	int vErr = 0;
-	struct __wsdd__Bye *pWsdd__Bye = MyMalloc(sizeof(struct __wsdd__Bye));
-	struct wsdd__ByeType *pWsdd__ByeType = MyMalloc(sizeof(struct wsdd__ByeType));	
-	struct soap *pSoap=MyMalloc(sizeof(struct soap));
+	struct __wsdd__Bye *pWsdd__Bye = NULL;
+	struct wsdd__ByeType *pWsdd__ByeType = NULL;
+	struct soap *pSoap = NULL;
+		
+	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
+		return 0;
+		
+	pWsdd__Bye = MyMalloc(sizeof(struct __wsdd__Bye));
+	pWsdd__ByeType = MyMalloc(sizeof(struct wsdd__ByeType));	
+	pSoap=MyMalloc(sizeof(struct soap));
+		
 	soap_init1(pSoap,SOAP_IO_UDP);
 
 	pSoap->fsend = mysend;
@@ -88,8 +104,8 @@ int SendBye(int socket)
 	// Build SOAP Header
 	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
 	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Bye");
-	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
-	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
+	pSoap->header->wsa5__MessageID = nativeGetMessageId();
+	pSoap->header->wsa5__To = nativeGetTo();
 	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
 	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
@@ -102,8 +118,8 @@ int SendBye(int socket)
 	pWsdd__ByeType->wsa5__EndpointReference.Address = nativeGetEndpointAddress();
 	pWsdd__ByeType->Types = nativeGetTypes();
 	pWsdd__ByeType->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
-	pWsdd__ByeType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");; 
-	pWsdd__ByeType->Scopes->__item = nativeGetScopes();
+	pWsdd__ByeType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986"); 
+	pWsdd__ByeType->Scopes->__item = nativeGetScopesItem();
 	pWsdd__ByeType->XAddrs = nativeGetXAddrs();
 	pWsdd__ByeType->MetadataVersion = MyMalloc(sizeof(int));
 	*pWsdd__ByeType->MetadataVersion = nativeGetMetadataVersion();
@@ -153,8 +169,8 @@ int SendProbe(int socket)
 	// Build SOAP Header
 	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
 	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Probe");
-	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
-	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
+	pSoap->header->wsa5__MessageID = nativeGetMessageId();
+	pSoap->header->wsa5__To = nativeGetTo();
 	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
 	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
@@ -168,7 +184,7 @@ int SendProbe(int socket)
 	pWsdd__ProbeType->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
 	pWsdd__ProbeType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
 	#if 1
-		pWsdd__ProbeType->Scopes->__item = nativeGetScopes();
+		pWsdd__ProbeType->Scopes->__item = nativeGetScopesItem();
 	#else
 		// Test for invalid scope
 		pWsdd__ProbeType->Scopes->__item = CopyString("undefinedScope");
@@ -215,8 +231,8 @@ int SendResolve(int socket)
 	// Build SOAP Header
 	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
 	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Resolve");
-	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
-	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
+	pSoap->header->wsa5__MessageID = nativeGetMessageId();
+	pSoap->header->wsa5__To = nativeGetTo();
 	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
 	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
@@ -257,12 +273,21 @@ int SendResolve(int socket)
 }
 
 
-int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In)
+int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSenderMsgId)
 {	
 	int vErr = 0;
-	struct __wsdd__ProbeMatches *pwsdd__ProbeMatches = MyMalloc(sizeof(struct __wsdd__ProbeMatches));
-	struct wsdd__ProbeMatchesType *pwsdd__ProbeMatchesType = MyMalloc(sizeof(struct wsdd__ProbeMatchesType));	
-	struct soap *pSoap=MyMalloc(sizeof(struct soap));
+	struct __wsdd__ProbeMatches *pwsdd__ProbeMatches = NULL;
+	struct wsdd__ProbeMatchesType *pwsdd__ProbeMatchesType = NULL;
+	struct soap *pSoap = NULL;
+			
+	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
+		return 0;
+		
+	pwsdd__ProbeMatches = MyMalloc(sizeof(struct __wsdd__ProbeMatches));
+	pwsdd__ProbeMatchesType = MyMalloc(sizeof(struct wsdd__ProbeMatchesType));	
+	pSoap=MyMalloc(sizeof(struct soap));
+	
+		
 	soap_init1(pSoap,SOAP_IO_UDP);
 
 	pSoap->fsend = mysend;
@@ -271,28 +296,33 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In)
 	// Build SOAP Header
 	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
 	memset(pSoap->header, 0, sizeof(struct SOAP_ENV__Header));
-	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/ProbeMatches");
-	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
-	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
+	pSoap->header->wsa5__Action = CopyString("http://schemas.xmlsoap.org/ws/2005/04/discovery/ProbeMatches");
+	pSoap->header->wsa5__MessageID = nativeGetMessageId();
+	pSoap->header->wsa5__To = CopyString("http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous");
 	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	memset(pSoap->header->wsdd__AppSequence, 0, sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
 	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
-
-	pSoap->header->wsa5__ReplyTo = MyMalloc(sizeof(struct wsa5__EndpointReferenceType));
-	memset(pSoap->header->wsa5__ReplyTo, 0, sizeof(struct wsa5__EndpointReferenceType));
-	pSoap->header->wsa5__ReplyTo->Address = nativeGetEndpointAddress();
 	
+	pSoap->header->wsa5__RelatesTo = MyMalloc(sizeof(struct wsa5__RelatesToType));
+	pSoap->header->wsa5__RelatesTo->__item = pSenderMsgId;
+		
 	// Build ProbeMatch Message
 	soap_default___wsdd__ProbeMatches(pSoap, pwsdd__ProbeMatches);
 	pSoap->encodingStyle = NULL;
+	
 	
 	pwsdd__ProbeMatches->wsdd__ProbeMatches = pwsdd__ProbeMatchesType;   
 	pwsdd__ProbeMatchesType->__sizeProbeMatch = 1;
 	pwsdd__ProbeMatchesType->ProbeMatch = MyMalloc(sizeof(struct wsdd__ProbeMatchType));
 	pwsdd__ProbeMatchesType->ProbeMatch->wsa5__EndpointReference.Address = nativeGetEndpointAddress();
 	pwsdd__ProbeMatchesType->ProbeMatch->MetadataVersion = nativeGetMetadataVersion();
-				   
+	pwsdd__ProbeMatchesType->ProbeMatch->Types = nativeGetTypes();
+	pwsdd__ProbeMatchesType->ProbeMatch->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
+	pwsdd__ProbeMatchesType->ProbeMatch->Scopes->__item = nativeGetScopesItem();
+	pwsdd__ProbeMatchesType->ProbeMatch->Scopes->MatchBy = NULL;//CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
+	pwsdd__ProbeMatchesType->ProbeMatch->XAddrs = nativeGetXAddrs();
+			
 	soap_serializeheader(pSoap);
 
 	soap_response(pSoap, SOAP_OK); 
@@ -322,25 +352,37 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In)
 	return SOAP_OK;
 }
 
-int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In)
+int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSenderMsgId)
 {
 	int vErr = 0;
-	struct __wsdd__ResolveMatches *pwsdd__ResolveMatches = MyMalloc(sizeof(struct __wsdd__ResolveMatches));
-	struct wsdd__ResolveMatchesType *pwsdd__ResolveMatchesType = MyMalloc(sizeof(struct wsdd__ResolveMatchesType));	
-	struct soap *pSoap=MyMalloc(sizeof(struct soap));
+	struct __wsdd__ResolveMatches *pwsdd__ResolveMatches = NULL;
+	struct wsdd__ResolveMatchesType *pwsdd__ResolveMatchesType = NULL;
+	struct soap *pSoap = NULL;
+			
+	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
+		return 0;
+		
+	pwsdd__ResolveMatches = MyMalloc(sizeof(struct __wsdd__ResolveMatches));
+	pwsdd__ResolveMatchesType = MyMalloc(sizeof(struct wsdd__ResolveMatchesType));	
+	pSoap=MyMalloc(sizeof(struct soap));
+	
+		
 	soap_init1(pSoap,SOAP_IO_UDP);
 
 	pSoap->fsend = mysend;
 
 	// Build SOAP Header
 	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
-	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/ResolveMatches");
-	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
-	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
+	pSoap->header->wsa5__Action = CopyString("http://schemas.xmlsoap.org/ws/2005/04/discovery/ResolveMatches");
+	pSoap->header->wsa5__MessageID = nativeGetMessageId();
+	pSoap->header->wsa5__To = CopyString("http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous");
 	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
 	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
 
+	pSoap->header->wsa5__RelatesTo = MyMalloc(sizeof(struct wsa5__RelatesToType));
+	pSoap->header->wsa5__RelatesTo->__item = pSenderMsgId;
+	
 	// Build Hello Message
 	soap_default___wsdd__ResolveMatches(pSoap, pwsdd__ResolveMatches);
 	pSoap->encodingStyle = NULL;
@@ -391,8 +433,8 @@ int SendFault(int socket, struct sockaddr_in *pSockAddr_In)
 	// Build SOAP Header
 	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
 	pSoap->header->wsa5__Action = CopyString("http://schemas.xmlsoap.org/ws/2005/04/discovery/fault");
-	pSoap->header->wsa5__MessageID = CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
-	pSoap->header->wsa5__To = CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
+	pSoap->header->wsa5__MessageID = nativeGetMessageId();
+	pSoap->header->wsa5__To = nativeGetTo();
 	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
 	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
@@ -443,7 +485,12 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 	int vSocket=-1;
 	int bScopeValid=1;
 	fprintf(stderr, "%s %s :%d sendfd=%d\n",__FILE__,__func__, __LINE__, pSoap->sendfd);
-	
+	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
+	{
+		fprintf(stderr, "%s %s :%d NONDISCOVERABLE\n",__FILE__,__func__, __LINE__);
+		return SOAP_OK;
+	}
+			
 #if 0	
 	fprintf(stderr, "\n======\n");
 	fprintf(stderr, "vLen=%zd, buf=\n%s\n", pSoap->buflen,pSoap->buf);
@@ -463,23 +510,23 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 		{
 			if(wsdd__Probe->Scopes->MatchBy)
 			{
-				if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986")==0)
+				if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://schemas.xmlsoap.org/ws/2005/04/discovery/rfc3986")==0)
 				{
 					bScopeValid = match_rfc3986(wsdd__Probe->Scopes->__item);
 				}
-				else if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/uuid")==0)
+				else if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://schemas.xmlsoap.org/ws/2005/04/discovery/uuid")==0)
 				{
 					bScopeValid = match_uuid(wsdd__Probe->Scopes->__item);
 				}
-				else if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/ldap")==0)
+				else if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://schemas.xmlsoap.org/ws/2005/04/discovery/ldap")==0)
 				{
 					bScopeValid = match_ldap(wsdd__Probe->Scopes->__item);
 				}
-				else if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/strcmp0")==0)
+				else if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://schemas.xmlsoap.org/ws/2005/04/discovery/strcmp0")==0)
 				{
 					bScopeValid = match_strcmp0(wsdd__Probe->Scopes->__item);
 				}						
-				else if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/none")==0)
+				else if(strcmp(wsdd__Probe->Scopes->MatchBy,"http://schemas.xmlsoap.org/ws/2005/04/discovery/none")==0)
 				{
 					bScopeValid = match_none(wsdd__Probe->Scopes->__item);
 				}											
@@ -487,22 +534,46 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 			else
 			{
 				// If there is no MatchBy in Scope Tag
-				// The default match is http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986
+				// The default match is http://schemas.xmlsoap.org/ws/2005/04/discovery/rfc3986
 				bScopeValid = match_rfc3986(wsdd__Probe->Scopes->__item);	
 			}
 		}
 	}
 	
+	if(wsdd__Probe->Types)
+	{
+		if(strcmp(wsdd__Probe->Types,nativeGetTypes())==0)
+		{
+			bScopeValid = 1;
+		}
+		else
+		{
+			bScopeValid = 0;
+		}			
+	}
+	// Chapter 3.1.3
+	// Before sending somemessage types. Target ServiceMust wait for a timer to elapse before sending the message.
+	// This timer MUST be set to a random value between 0 and APP_MAX_DELAY
+	//usleep( (random()%APP_MAX_DELAY) );
+	sleep(1);
 	// For IPv4 only
 	vSocket = CreateUnicastClient(&pSoap->peer);
 	if(bScopeValid)
 	{
-		SendProbeMatches(vSocket, &pSoap->peer);
+		char *pSenderMessageId=NULL;
+		if(pSoap->header)
+			if(pSoap->header->wsa5__MessageID)
+				pSenderMessageId = pSoap->header->wsa5__MessageID;
+						
+		SendProbeMatches(vSocket, &pSoap->peer, pSenderMessageId);
 	}
 	else
 	{
-		SendFault(vSocket, &pSoap->peer);
+		// Chapter 6.3.1 Target Service
+		// If a Target Service receives a Probe that does not match, it MUST NOT respond with a Probe Match.
+		// SendFault(vSocket, &pSoap->peer);
 	}
+	close(vSocket);
 	return SOAP_OK;
 }
 
@@ -512,7 +583,12 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Resolve(struct soap *pSoap, struct wsdd__Resol
 	int bResolveValid=1;
 		
 	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
-
+	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
+	{
+		fprintf(stderr, "%s %s :%d NONDISCOVERABLE\n",__FILE__,__func__, __LINE__);
+		return SOAP_OK;
+	}
+		
 	// Check peer for ad hoc mode or managed mode
 	if(wsdd__Resolve)
 	{
@@ -527,13 +603,20 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Resolve(struct soap *pSoap, struct wsdd__Resol
 	vSocket = CreateUnicastClient(&pSoap->peer);
 	if(bResolveValid)
 	{
-		SendResolveMatches(vSocket, &pSoap->peer);
+		char *pSenderMessageId=NULL;
+		if(pSoap->header)
+			if(pSoap->header->wsa5__MessageID)
+				pSenderMessageId = pSoap->header->wsa5__MessageID;
+				
+		SendResolveMatches(vSocket, &pSoap->peer, pSenderMessageId);
 	}
 	else
 	{
-		SendFault(vSocket, &pSoap->peer);
+		// Chapter 6.3.1 Target Service
+		// If a Target Service receives a Resolve that does not match, it MUST NOT respond with a Resolve Match.
+		;
 	}
-		
+	close(vSocket);	
 	return SOAP_OK;
 }
 
