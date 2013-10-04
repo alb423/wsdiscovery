@@ -12,7 +12,7 @@
 #include "soapH.h"
 #include "util.h"
 #include "porting.h"
-
+#include "wsdd.nsmap" //  SOAP_NMAC struct Namespace namespaces[]
 // Send Multicast Packet (Hello and Bye)
 int SendHello(int socket)
 {
@@ -279,7 +279,8 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSender
 	struct __wsdd__ProbeMatches *pwsdd__ProbeMatches = NULL;
 	struct wsdd__ProbeMatchesType *pwsdd__ProbeMatchesType = NULL;
 	struct soap *pSoap = NULL;
-			
+
+fprintf(stderr, "%s %s :%d \n",__FILE__,__func__, __LINE__);			
 	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
 		return 0;
 		
@@ -292,7 +293,7 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSender
 
 	pSoap->fsend = mysend;
 
-
+fprintf(stderr, "%s %s :%d \n",__FILE__,__func__, __LINE__);
 	// Build SOAP Header
 	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
 	memset(pSoap->header, 0, sizeof(struct SOAP_ENV__Header));
@@ -311,7 +312,7 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSender
 	soap_default___wsdd__ProbeMatches(pSoap, pwsdd__ProbeMatches);
 	pSoap->encodingStyle = NULL;
 	
-	
+fprintf(stderr, "%s %s :%d \n",__FILE__,__func__, __LINE__);	
 	pwsdd__ProbeMatches->wsdd__ProbeMatches = pwsdd__ProbeMatchesType;   
 	pwsdd__ProbeMatchesType->__sizeProbeMatch = 1;
 	pwsdd__ProbeMatchesType->ProbeMatch = MyMalloc(sizeof(struct wsdd__ProbeMatchType));
@@ -319,7 +320,7 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSender
 	pwsdd__ProbeMatchesType->ProbeMatch->MetadataVersion = nativeGetMetadataVersion();
 	pwsdd__ProbeMatchesType->ProbeMatch->Types = nativeGetTypes();
 	pwsdd__ProbeMatchesType->ProbeMatch->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
-	pwsdd__ProbeMatchesType->ProbeMatch->Scopes->__item = nativeGetScopesItem();
+	pwsdd__ProbeMatchesType->ProbeMatch->Scopes->__item = CopyString("onvif://www.onvif.org/type/NetworkVideoTransmitter"); // nativeGetScopesItem();
 	pwsdd__ProbeMatchesType->ProbeMatch->Scopes->MatchBy = NULL;//CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
 	pwsdd__ProbeMatchesType->ProbeMatch->XAddrs = nativeGetXAddrs();
 			
@@ -335,6 +336,7 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSender
 	soap_end_send(pSoap);
 	soap_destroy(pSoap);
 	soap_end(pSoap);
+fprintf(stderr, "%s %s :%d \n",__FILE__,__func__, __LINE__);
 		
 	char *pBuffer = getXmlBufferData();
 	int vBufLen = strlen(pBuffer);		
@@ -551,6 +553,11 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 			bScopeValid = 0;
 		}			
 	}
+	
+	// Test only
+	bScopeValid = 1;
+	
+	
 	// Chapter 3.1.3
 	// Before sending somemessage types. Target ServiceMust wait for a timer to elapse before sending the message.
 	// This timer MUST be set to a random value between 0 and APP_MAX_DELAY

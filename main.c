@@ -38,37 +38,6 @@ typedef struct {
 }tThread;
 tThread tptr[2];
 
-SOAP_NMAC struct Namespace namespaces[] =
-{
-#if 0
-   {"SOAP-ENV", "http://schemas.xmlsoap.org/soap/envelope/", "http://www.w3.org/*/soap-envelope", NULL},
-   {"wsa5", "http://www.w3.org/2005/08/addressing", NULL, NULL},
-   //{"wsdd", "http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01", NULL, NULL},  
-   {"wsdd", "http://schemas.xmlsoap.org/ws/2005/04/discovery", NULL, NULL},
-#else
-	 //{"SOAP-ENV", "http://schemas.xmlsoap.org/soap/envelope/", "http://www.w3.org/*/soap-envelope", NULL},
-   {"SOAP-ENV", "http://www.w3.org/2003/05/soap-envelope", NULL, NULL}, 
-   {"SOAP-ENC", "http://www.w3.org/2003/05/soap-encoding", NULL, NULL}, 
-   {"wsa5", "http://schemas.xmlsoap.org/ws/2004/08/addressing", NULL, NULL},   
-   {"wsdd", "http://schemas.xmlsoap.org/ws/2005/04/discovery", NULL, NULL},
-   
-#endif   
-
-   {"dn", "http://www.onvif.org/ver10/network/wsdl", NULL, NULL},
-   //{"tds", "http://www.onvif.org/ver10/device/wsdl", NULL, NULL},
-
-   //{"xsd", "http://www.w3.org/2001/XMLSchema", "http://www.w3.org/*/XMLSchema", NULL},
-   //{"xsi", "http://www.w3.org/2001/XMLSchema-instance", "http://www.w3.org/*/XMLSchema", NULL},
-   //{"xsd", "http://www.w3.org/2001/XMLSchema-instance", NULL, NULL},
-   //{"xsi", "http://www.w3.org/2001/XMLSchema-instance", NULL, NULL},
-      
-   //{"wsa", "http://schemas.xmlsoap.org/ws/2004/08/addressing", NULL, NULL},
-   //{"wsa2", "http://www.w3.org/2005/03/addressing", NULL, NULL},
-
-   {NULL, NULL, NULL, NULL}
-};
-
-
 void send_msg_update_scopes();
 void send_msg_reboot();
 void send_msg_discoverymode(char vMode);
@@ -111,9 +80,14 @@ int _server(int argc, char **argv)
 	msocket_cli = CreateMulticastClient(MULTICAST_PORT);	
 	msocket_srv = CreateMulticastServer();
 	
-	// Handle Probe and Resolve request
 	pSoap = MyMalloc(sizeof(struct soap));
 	soap_init1(pSoap, SOAP_IO_UDP);
+		
+	// Handle Probe and Resolve request
+	//pSoap = soap_new2(SOAP_XML_DEFAULTNS|SOAP_IO_UDP|SOAP_XML_INDENT,\
+	//SOAP_IO_UDP|SOAP_XML_DEFAULTNS|SOAP_IO_STORE|SOAP_XML_TREE|SOAP_XML_CANONICAL);
+  //pSoap = soap_new1(SOAP_IO_UDP);
+	
 	
 	//pSoap->sendfd = msocket_cli;
 	//pSoap->recvfd = msocket_srv;

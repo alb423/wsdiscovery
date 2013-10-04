@@ -27,7 +27,8 @@ char *nativeGetEndpointAddress()
 {
 	char pTmp[1024]={0};
 	
-	sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
+		sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
+	//sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
 	
 	// It is RECOMMENDED that the balue of this element be a stable globally-unique identifier (GUID) base URN[RFC 4122]
 	// If the value of this element is not a network-resolvable transport address, 
@@ -58,11 +59,13 @@ onvif://www.onvif.org/Profile/Streaming");
 
 char *nativeGetMessageId()
 {
-	char pTmp[] = "urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c";
-	int vLen = strlen(pTmp)-1;
+	//char pTmp[] = "urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c";
+	//char pTmp[] = "urn:uuid:2419d68a-2dd2-21b2-a205-";
+	//int vLen = strlen(pTmp)-1;
 	
-	// TODO: fix me
-	pTmp[vLen] += _gInstanceId;
+	char pTmp[1024]={0};
+	sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
+
 	
 	return CopyString(pTmp);
 	
