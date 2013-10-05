@@ -1,4 +1,4 @@
-
+#if 0
 #include "soapH.h"
 SOAP_NMAC struct Namespace namespaces[] =
 {
@@ -11,3 +11,20 @@ SOAP_NMAC struct Namespace namespaces[] =
 	{"wsdd", "http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01", "http://schemas.xmlsoap.org/ws/2005/04/discovery", NULL},
 	{NULL, NULL, NULL, NULL}
 };
+
+#else
+
+SOAP_NMAC struct Namespace namespaces[] =
+{
+	{"SOAP-ENV", "http://www.w3.org/2003/05/soap-envelope", "http://schemas.xmlsoap.org/soap/envelope/", NULL},
+	{"SOAP-ENC", "http://www.w3.org/2003/05/soap-encoding", "http://schemas.xmlsoap.org/soap/encoding/", NULL},
+	{"xsi", "http://www.w3.org/2001/XMLSchema-instance", "http://www.w3.org/*/XMLSchema-instance", NULL},
+	{"xsd", "http://www.w3.org/2001/XMLSchema", "http://www.w3.org/*/XMLSchema", NULL},
+	{"chan", "http://schemas.microsoft.com/ws/2005/02/duplex", NULL, NULL},
+	{"wsa5", "http://schemas.xmlsoap.org/ws/2004/08/addressing", "http://www.w3.org/2005/08/addressing", NULL},
+	{"wsdd", "http://schemas.xmlsoap.org/ws/2005/04/discovery", "http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01", NULL},
+	{"dn", "http://www.onvif.org/ver10/network/wsdl", NULL, NULL},
+	{NULL, NULL, NULL, NULL}
+};
+                    
+#endif                    

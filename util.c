@@ -319,3 +319,42 @@ int match_none(char *pItem)
 		return 0;
 }
 							
+							
+//=========
+void InitMyRandom(char *myipaddr)
+{
+    unsigned int ourAddress;
+    struct timeval timeNow;
+    
+    ourAddress = ntohl(inet_addr(myipaddr));
+    gettimeofday(&timeNow, NULL);
+    
+    unsigned int seed = ourAddress^timeNow.tv_sec^timeNow.tv_usec;
+        
+    srandom(seed);
+}
+
+long our_random() 
+{
+    return random();
+}
+
+unsigned int our_random16()
+{
+    long random1 = our_random();
+    return (unsigned int)(random1&0xffff);
+}
+
+
+unsigned int our_random32() 
+{  
+    long random1 = our_random();
+      long random2 = our_random();
+      
+      return (unsigned int)((random2<<31) | random1);
+}
+							
+void UuidGen(char *uuidbuf)
+{
+    sprintf(uuidbuf, "%08x-%04x-%04x-%04x-%08x%04x",our_random32(), our_random16(),our_random16(),our_random16(),our_random32(), our_random16());    
+}							

@@ -39,5 +39,12 @@ extern int match_ldap(char *pItem);
 extern int match_strcmp0(char *pItem);
 extern int match_none(char *pItem);
 
+
+extern void InitMyRandom(char *myipaddr);
+extern long our_random() ;
+extern unsigned int our_random16();
+extern unsigned int our_random32();
+extern void UuidGen(char *uuidbuf);
+
 #endif
 

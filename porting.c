@@ -15,6 +15,13 @@
 static int _gMetadataVersion = 1;
 static int _gDiscoveryMode = 0;
 static int _gInstanceId = 1;
+static int _gMessageNumber = 1;
+
+int nativeGetMessageNumber()
+{
+	return _gMessageNumber++;
+}
+
 char *nativeGetXAddrs()
 {
 	char pTmp[1024] = {0};
@@ -27,7 +34,9 @@ char *nativeGetEndpointAddress()
 {
 	char pTmp[1024]={0};
 	
-		sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
+	//sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-4c8d79eaee74");
+	
+	sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
 	//sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
 	
 	// It is RECOMMENDED that the balue of this element be a stable globally-unique identifier (GUID) base URN[RFC 4122]
@@ -63,8 +72,10 @@ char *nativeGetMessageId()
 	//char pTmp[] = "urn:uuid:2419d68a-2dd2-21b2-a205-";
 	//int vLen = strlen(pTmp)-1;
 	
-	char pTmp[1024]={0};
-	sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
+	char pTmp[128]={0}, pTmp2[128]={0};
+	UuidGen(pTmp2);
+	sprintf(pTmp, "uuid:%s", pTmp2);
+	//sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
 
 	
 	return CopyString(pTmp);

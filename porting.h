@@ -18,6 +18,7 @@ extern char *nativeGetScopesItem();
 extern char *nativeGetMessageId();
 extern char *nativeGetTo();
 
+extern int nativeGetMessageNumber();
 extern int nativeGetInstanceId();
 
 extern int nativeGetMetadataVersion();

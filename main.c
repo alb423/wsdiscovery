@@ -77,6 +77,7 @@ int _server(int argc, char **argv)
 	struct soap* pSoap = NULL;
 
 	pAddress = getMyIpString();
+	InitMyRandom(pAddress);
 	msocket_cli = CreateMulticastClient(MULTICAST_PORT);	
 	msocket_srv = CreateMulticastServer();
 	

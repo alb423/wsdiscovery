@@ -303,7 +303,7 @@ fprintf(stderr, "%s %s :%d \n",__FILE__,__func__, __LINE__);
 	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	memset(pSoap->header->wsdd__AppSequence, 0, sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
-	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
+	pSoap->header->wsdd__AppSequence->MessageNumber = nativeGetMessageNumber();
 	
 	pSoap->header->wsa5__RelatesTo = MyMalloc(sizeof(struct wsa5__RelatesToType));
 	pSoap->header->wsa5__RelatesTo->__item = pSenderMsgId;
@@ -320,7 +320,8 @@ fprintf(stderr, "%s %s :%d \n",__FILE__,__func__, __LINE__);
 	pwsdd__ProbeMatchesType->ProbeMatch->MetadataVersion = nativeGetMetadataVersion();
 	pwsdd__ProbeMatchesType->ProbeMatch->Types = nativeGetTypes();
 	pwsdd__ProbeMatchesType->ProbeMatch->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
-	pwsdd__ProbeMatchesType->ProbeMatch->Scopes->__item = CopyString("onvif://www.onvif.org/type/NetworkVideoTransmitter"); // nativeGetScopesItem();
+	pwsdd__ProbeMatchesType->ProbeMatch->Scopes->__item = nativeGetScopesItem();
+	//CopyString("onvif://www.onvif.org/type/NetworkVideoTransmitter"); // 
 	pwsdd__ProbeMatchesType->ProbeMatch->Scopes->MatchBy = NULL;//CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
 	pwsdd__ProbeMatchesType->ProbeMatch->XAddrs = nativeGetXAddrs();
 			
@@ -380,7 +381,7 @@ int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSend
 	pSoap->header->wsa5__To = CopyString("http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous");
 	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) MyMalloc(sizeof(struct wsdd__AppSequenceType));
 	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
-	pSoap->header->wsdd__AppSequence->MessageNumber = 1;
+	pSoap->header->wsdd__AppSequence->MessageNumber = nativeGetMessageNumber();
 
 	pSoap->header->wsa5__RelatesTo = MyMalloc(sizeof(struct wsa5__RelatesToType));
 	pSoap->header->wsa5__RelatesTo->__item = pSenderMsgId;
@@ -552,6 +553,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 		{
 			bScopeValid = 0;
 		}			
+	  printf("wsdd__Probe->Types = %s\n",wsdd__Probe->Types);
 	}
 	
 	// Test only
@@ -561,8 +563,9 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 	// Chapter 3.1.3
 	// Before sending somemessage types. Target ServiceMust wait for a timer to elapse before sending the message.
 	// This timer MUST be set to a random value between 0 and APP_MAX_DELAY
-	//usleep( (random()%APP_MAX_DELAY) );
-	sleep(1);
+	usleep( (random()%APP_MAX_DELAY) );
+	// sleep(1);
+	
 	// For IPv4 only
 	vSocket = CreateUnicastClient(&pSoap->peer);
 	if(bScopeValid)
@@ -570,9 +573,20 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 		char *pSenderMessageId=NULL;
 		if(pSoap->header)
 			if(pSoap->header->wsa5__MessageID)
-				pSenderMessageId = pSoap->header->wsa5__MessageID;
+			{
+				int vLen=0;
+				vLen = strlen(pSoap->header->wsa5__MessageID);
+				pSenderMessageId = MyMalloc(vLen+10);
+				//sprintf(pSenderMessageId, "urn:%s",pSoap->header->wsa5__MessageID);
+				sprintf(pSenderMessageId, "%s",pSoap->header->wsa5__MessageID);
+			}
 						
 		SendProbeMatches(vSocket, &pSoap->peer, pSenderMessageId);
+		usleep(500000);
+		SendProbeMatches(vSocket, &pSoap->peer, pSenderMessageId);
+		
+		if(pSenderMessageId)
+			free(pSenderMessageId);
 	}
 	else
 	{
