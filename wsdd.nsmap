@@ -24,6 +24,7 @@ SOAP_NMAC struct Namespace namespaces[] =
 	{"wsa5", "http://schemas.xmlsoap.org/ws/2004/08/addressing", "http://www.w3.org/2005/08/addressing", NULL},
 	{"wsdd", "http://schemas.xmlsoap.org/ws/2005/04/discovery", "http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01", NULL},
 	{"dn", "http://www.onvif.org/ver10/network/wsdl", NULL, NULL},
+	{"tds", "http://www.onvif.org/ver10/device/wsdl", NULL, NULL},
 	{NULL, NULL, NULL, NULL}
 };
                     

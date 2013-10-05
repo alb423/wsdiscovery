@@ -143,7 +143,7 @@ char * getMyIpString(void)
   	#endif
   	
   	
-    printf("gpLocalAddr is set to %s, MAC is %s\n\n", gpLocalAddr, gpMacAddr);    
+    DBG("gpLocalAddr is set to %s, MAC is %s\n\n", gpLocalAddr, gpMacAddr);    
     if (ifAddrStruct!=NULL) freeifaddrs(ifAddrStruct);
     return gpLocalAddr;
 }
@@ -173,7 +173,7 @@ int CreateUnicastClient(struct sockaddr_in *pSockAddr)
 		DBG("setsockopt...error.\n");
 	}
 	
-	fprintf(stderr,"sock=%d, s_addr=%s, sin_port=%d\n", sd, inet_ntoa(pSockAddr->sin_addr), htons(pSockAddr->sin_port));	
+	DBG("sock=%d, s_addr=%s, sin_port=%d\n", sd, inet_ntoa(pSockAddr->sin_addr), htons(pSockAddr->sin_port));	
 	
 	return sd;
 }

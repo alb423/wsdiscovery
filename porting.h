@@ -9,8 +9,6 @@
 // This timer MUST be set to a random value between 0 and APP_MAX_DELAY
 #define APP_MAX_DELAY 500
 
-
-
 extern char *nativeGetEndpointAddress();
 extern char *nativeGetXAddrs();
 extern char *nativeGetTypes();

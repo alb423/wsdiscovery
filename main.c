@@ -83,13 +83,7 @@ int _server(int argc, char **argv)
 	
 	pSoap = MyMalloc(sizeof(struct soap));
 	soap_init1(pSoap, SOAP_IO_UDP);
-		
-	// Handle Probe and Resolve request
-	//pSoap = soap_new2(SOAP_XML_DEFAULTNS|SOAP_IO_UDP|SOAP_XML_INDENT,\
-	//SOAP_IO_UDP|SOAP_XML_DEFAULTNS|SOAP_IO_STORE|SOAP_XML_TREE|SOAP_XML_CANONICAL);
-  //pSoap = soap_new1(SOAP_IO_UDP);
-	
-	
+			
 	//pSoap->sendfd = msocket_cli;
 	//pSoap->recvfd = msocket_srv;
 	pSoap->recvsk = msocket_srv;
@@ -111,7 +105,6 @@ int _server(int argc, char **argv)
 	while(1)
 	{
 		soap_serve(pSoap);
-		//fprintf(stderr, "%s %s :%d pid=%d \n",__FILE__,__func__, __LINE__, getpid());
 		fprintf(stderr, "%s %s :%d peer addr=%s, port=%d, error=%d\n",__FILE__,__func__, __LINE__, inet_ntoa(pSoap->peer.sin_addr), pSoap->peer.sin_port,  pSoap->error);	
 		if(pSoap->header)
 		{
@@ -238,13 +231,13 @@ void RecvThread(void* data)
     
 	msocket_cli = CreateMulticastClient(MULTICAST_PORT);
 	    
-  printf("RecvThread start....\n");
+  DBG("RecvThread start....\n");
 	if((msqid = msgget(ONVIF_DIS_MSG_KEY, PERMS | IPC_CREAT)) >= 0)
 	{
 		native_msg_buf  recvmsg ;
 		while(1)
 		{                    
-			printf("start recv msg .. \n");
+			DBG("start recv msg .. \n");
 			if(msgrcv(msqid, &recvmsg, 4, 0, 0) > 0)
 			{
 				if(recvmsg.mtype == ONVIF_MSG_UPDATE_SCOPES)
@@ -267,7 +260,7 @@ void RecvThread(void* data)
 				else if(recvmsg.mtype == ONVIF_MSG_DISCOVERYMODE)
 				{
 					//initDiscoveryMode();
-					printf("recvmsg.mtext[0]=%c\n",recvmsg.mtext[0]);
+					DBG("recvmsg.mtext[0]=%c\n",recvmsg.mtext[0]);
 					nativeChangeDiscoveryMode(recvmsg.mtext[0]);
 					SendHello(msocket_cli);
 				}
@@ -278,12 +271,12 @@ void RecvThread(void* data)
 		
 		if(msgctl(msqid, IPC_RMID, (struct msqid_ds *) 0) < 0)
 		{
-			printf("msg queue remove error !! \n");
+			DBG("msg queue remove error !! \n");
 		}
 	}       
   
   close(msocket_cli);
-  printf("RecvThread end....\n");
+  DBG("RecvThread end....\n");
   pthread_exit ("thread all done");
   
 }
@@ -325,7 +318,7 @@ void send_msg_discoverymode(char vMode)
   	native_msg_buf  sendmsg ;
   	sendmsg.mtype = ONVIF_MSG_DISCOVERYMODE;
   	sendmsg.mtext[0] = vMode;
-  	printf("\n send_msg_discoverymode() vMode = %c \n\n", vMode);
+  	DBG("\n send_msg_discoverymode() vMode = %c \n\n", vMode);
   	if(msgsnd(msqid, &sendmsg, 1, 0) < 0)
   	{
   		perror("msgsnd() error!!\n");

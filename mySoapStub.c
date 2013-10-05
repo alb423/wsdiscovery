@@ -279,8 +279,7 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSender
 	struct __wsdd__ProbeMatches *pwsdd__ProbeMatches = NULL;
 	struct wsdd__ProbeMatchesType *pwsdd__ProbeMatchesType = NULL;
 	struct soap *pSoap = NULL;
-
-fprintf(stderr, "%s %s :%d \n",__FILE__,__func__, __LINE__);			
+			
 	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
 		return 0;
 		
@@ -293,7 +292,6 @@ fprintf(stderr, "%s %s :%d \n",__FILE__,__func__, __LINE__);
 
 	pSoap->fsend = mysend;
 
-fprintf(stderr, "%s %s :%d \n",__FILE__,__func__, __LINE__);
 	// Build SOAP Header
 	pSoap->header = (struct SOAP_ENV__Header *) MyMalloc(sizeof(struct SOAP_ENV__Header));
 	memset(pSoap->header, 0, sizeof(struct SOAP_ENV__Header));
@@ -312,7 +310,6 @@ fprintf(stderr, "%s %s :%d \n",__FILE__,__func__, __LINE__);
 	soap_default___wsdd__ProbeMatches(pSoap, pwsdd__ProbeMatches);
 	pSoap->encodingStyle = NULL;
 	
-fprintf(stderr, "%s %s :%d \n",__FILE__,__func__, __LINE__);	
 	pwsdd__ProbeMatches->wsdd__ProbeMatches = pwsdd__ProbeMatchesType;   
 	pwsdd__ProbeMatchesType->__sizeProbeMatch = 1;
 	pwsdd__ProbeMatchesType->ProbeMatch = MyMalloc(sizeof(struct wsdd__ProbeMatchType));
@@ -337,7 +334,6 @@ fprintf(stderr, "%s %s :%d \n",__FILE__,__func__, __LINE__);
 	soap_end_send(pSoap);
 	soap_destroy(pSoap);
 	soap_end(pSoap);
-fprintf(stderr, "%s %s :%d \n",__FILE__,__func__, __LINE__);
 		
 	char *pBuffer = getXmlBufferData();
 	int vBufLen = strlen(pBuffer);		
@@ -543,6 +539,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 		}
 	}
 	
+	// For ONVIF only
 	if(wsdd__Probe->Types)
 	{
 		if(strcmp(wsdd__Probe->Types,nativeGetTypes())==0)
@@ -557,7 +554,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 	}
 	
 	// Test only
-	bScopeValid = 1;
+	//bScopeValid = 1;
 	
 	
 	// Chapter 3.1.3

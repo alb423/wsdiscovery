@@ -34,23 +34,26 @@ char *nativeGetEndpointAddress()
 {
 	char pTmp[1024]={0};
 	
-	//sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-4c8d79eaee74");
-	
-	sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
-	//sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
-	
 	// It is RECOMMENDED that the balue of this element be a stable globally-unique identifier (GUID) base URN[RFC 4122]
 	// If the value of this element is not a network-resolvable transport address, 
 	// such tansport address(es) are converyed in a separate d:XAddrs element
 	
 	// "urn:uuid:98190dc2-0890-4ef8-ac9a-5940995e6119" is a example of wsdd-discovery-1.1-spec-cs-01.pdf
+	
+	//sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
+	sprintf(pTmp, "urn:uuid:98190dc2-0890-4ef8-ac9a-%s", getMyMacAddress());	
+	
 	return CopyString(pTmp);
 }
 
 char *nativeGetTypes()
 {
 	// For old version, return "dn:NetworkVideoTransmitter"
+	
+	//{"tds", "http://www.onvif.org/ver10/device/wsdl", NULL, NULL},
 	//return CopyString("tds:Device");
+	
+	// {"dn", "http://www.onvif.org/ver10/network/wsdl", NULL, NULL},
 	return CopyString("dn:NetworkVideoTransmitter");
 }
 
@@ -68,20 +71,11 @@ onvif://www.onvif.org/Profile/Streaming");
 
 char *nativeGetMessageId()
 {
-	//char pTmp[] = "urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c";
-	//char pTmp[] = "urn:uuid:2419d68a-2dd2-21b2-a205-";
-	//int vLen = strlen(pTmp)-1;
-	
 	char pTmp[128]={0}, pTmp2[128]={0};
 	UuidGen(pTmp2);
 	sprintf(pTmp, "uuid:%s", pTmp2);
-	//sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
 
-	
-	return CopyString(pTmp);
-	
-	// TODO: should return different MessageId
-	//return CopyString("urn:uuid:73948edc-3204-4455-bae2-7c7d0ff6c37c");
+	return CopyString(pTmp);	
 }
 
 char *nativeGetTo()
@@ -89,8 +83,8 @@ char *nativeGetTo()
 	// In an ad hoc mode, it MUST be "urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01"
 	return CopyString("urn:docs-oasis-open-org:ws-dd:ns:discovery:2009:01");
 	
-	// If this is a response message
-	// CopyString("http://www.w3.org/2006/08/addressing/anonymous");
+		// If this is a response message
+		// CopyString("http://www.w3.org/2006/08/addressing/anonymous");
 	
 	// In a managed mode, it MUST be the [address] property of the Endpoint Reference of the Discovery Proxy.
 }
@@ -107,6 +101,7 @@ int nativeGetMetadataVersion()
 
 void nativeIncreaseMetadataVersion()
 {
+	// This value will change when receive notify message	
 	_gMetadataVersion++;
 }
 
