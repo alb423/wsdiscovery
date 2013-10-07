@@ -22,11 +22,23 @@ int nativeGetMessageNumber()
 	return _gMessageNumber++;
 }
 
-char *nativeGetXAddrs()
+char *nativeGetXAddrs(char *pAddrToResponse)
 {
+	int i = 0;
 	char pTmp[1024] = {0};
+	char *pAddrToSend = NULL;
 	
-	sprintf(pTmp, "http://%s:80/onvif/device_service", getMyIpString(INTERFACE_NAME_1));
+	// Resonse the ip with the same netmask
+	for(i=0; i<NET_MAX_INTERFACE; i++)
+	{
+		pAddrToSend = gpLocalAddr[i];
+		if(strncmp(pAddrToSend, pAddrToResponse, strlen(pAddrToSend)-3)==0)
+			break;
+	}
+
+	//sprintf(pTmp, "http://%s:80/onvif/device_service", getMyIpString(INTERFACE_NAME_1));
+	sprintf(pTmp, "http://%s:80/onvif/device_service", pAddrToSend);
+	
 	return CopyString(pTmp);
 }
 

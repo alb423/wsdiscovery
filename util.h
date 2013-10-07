@@ -26,7 +26,7 @@
 // Network
 
 extern struct sockaddr_in gMSockAddr;
-
+extern char gpLocalAddr[NET_MAX_INTERFACE][32];
 
 extern char * getMyIpString(char *pInterfaceName);
 extern char * initMyIpString(void);

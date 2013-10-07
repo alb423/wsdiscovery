@@ -52,7 +52,7 @@ int SendHello(int socket)
 	pWsdd__HelloType->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
 	pWsdd__HelloType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");; 
 	pWsdd__HelloType->Scopes->__item = nativeGetScopesItem();
-	pWsdd__HelloType->XAddrs = nativeGetXAddrs();
+	pWsdd__HelloType->XAddrs = nativeGetXAddrs(inet_ntoa(gMSockAddr.sin_addr));
 	pWsdd__HelloType->MetadataVersion = nativeGetMetadataVersion();
 		
 	soap_serializeheader(pSoap);
@@ -120,7 +120,7 @@ int SendBye(int socket)
 	pWsdd__ByeType->Scopes = MyMalloc(sizeof(struct wsdd__ScopesType));
 	pWsdd__ByeType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986"); 
 	pWsdd__ByeType->Scopes->__item = nativeGetScopesItem();
-	pWsdd__ByeType->XAddrs = nativeGetXAddrs();
+	pWsdd__ByeType->XAddrs = nativeGetXAddrs(inet_ntoa(gMSockAddr.sin_addr));
 	pWsdd__ByeType->MetadataVersion = MyMalloc(sizeof(int));
 	*pWsdd__ByeType->MetadataVersion = nativeGetMetadataVersion();
 				   
@@ -309,7 +309,7 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSender
 	// Build ProbeMatch Message
 	soap_default___wsdd__ProbeMatches(pSoap, pwsdd__ProbeMatches);
 	pSoap->encodingStyle = NULL;
-	
+			
 	pwsdd__ProbeMatches->wsdd__ProbeMatches = pwsdd__ProbeMatchesType;   
 	pwsdd__ProbeMatchesType->__sizeProbeMatch = 1;
 	pwsdd__ProbeMatchesType->ProbeMatch = MyMalloc(sizeof(struct wsdd__ProbeMatchType));
@@ -320,7 +320,7 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSender
 	pwsdd__ProbeMatchesType->ProbeMatch->Scopes->__item = nativeGetScopesItem();
 	//CopyString("onvif://www.onvif.org/type/NetworkVideoTransmitter"); // 
 	pwsdd__ProbeMatchesType->ProbeMatch->Scopes->MatchBy = NULL;//CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
-	pwsdd__ProbeMatchesType->ProbeMatch->XAddrs = nativeGetXAddrs();
+	pwsdd__ProbeMatchesType->ProbeMatch->XAddrs = nativeGetXAddrs(inet_ntoa(pSockAddr_In->sin_addr));
 			
 	soap_serializeheader(pSoap);
 
@@ -574,7 +574,6 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 				int vLen=0;
 				vLen = strlen(pSoap->header->wsa5__MessageID);
 				pSenderMessageId = MyMalloc(vLen+10);
-				//sprintf(pSenderMessageId, "urn:%s",pSoap->header->wsa5__MessageID);
 				sprintf(pSenderMessageId, "%s",pSoap->header->wsa5__MessageID);
 			}
 						

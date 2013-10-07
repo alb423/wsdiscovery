@@ -10,7 +10,7 @@
 #define APP_MAX_DELAY 500
 
 extern char *nativeGetEndpointAddress();
-extern char *nativeGetXAddrs();
+extern char *nativeGetXAddrs(char *pAddrToResponse);
 extern char *nativeGetTypes();
 extern char *nativeGetScopesItem();
 extern char *nativeGetMessageId();

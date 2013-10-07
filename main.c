@@ -104,12 +104,13 @@ int _server(int argc, char **argv)
 	//pSoap->recvfd = msocket_srv;
 	pSoap->recvsk = msocket_srv;
 
-	usleep(50000);SendHello(msocket_cli); 
-	usleep(50000);SendHello(msocket_cli2); 
-	usleep(50000);SendHello(msocket_cli); 
-	usleep(50000);SendHello(msocket_cli2);
-	usleep(50000);SendHello(msocket_cli); 
-	usleep(50000);SendHello(msocket_cli2);	 	
+	// send 3 times to avoid packet loss
+	usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli); 
+	usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli2); 
+	usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli); 
+	usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli2);
+	usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli); 
+	usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli2);	 	
 		
 	thread_ret=pthread_create( &tptr[thread_no].thread_tid, NULL, (void *) RecvThread, (void*)thread_no );
 	if(thread_ret!=0)
