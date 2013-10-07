@@ -116,7 +116,7 @@ char * initMyIpString(void)
             char addressBuffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
             DBG("%s IP Address %s\n", ifa->ifa_name, addressBuffer); 
-            if(strncmp(ifa->ifa_name, "en", 2)==0)
+            if(strncmp(ifa->ifa_name, INTERFACE_NAME_1, 2)==0)
             {
 							// Note: you may set local address for different interface. For example:eth0, eth1
 							memcpy(gpLocalAddr[vInterfaceCount], addressBuffer, strlen(addressBuffer));
