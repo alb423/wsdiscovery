@@ -14,12 +14,24 @@
 
 #define MULTICAST_ADDR "239.255.255.250"
 #define MULTICAST_PORT 3702
+#define NET_MAX_INTERFACE 4
 
+#ifdef __APPLE__
+#define INTERFACE_NAME_1 "en0"
+#define INTERFACE_NAME_2 "en1"
+#else
+#define INTERFACE_NAME_1 "eth0"
+#define INTERFACE_NAME_2 "eth1"
+#endif
 // Network
+
 extern struct sockaddr_in gMSockAddr;
-extern char * getMyIpString(void);
+
+
+extern char * getMyIpString(char *pInterfaceName);
+extern char * initMyIpString(void);
 extern char * getMyMacAddress(void);
-extern int CreateMulticastClient(int port);
+extern int CreateMulticastClient(char *pAddress, int port);
 extern int CreateMulticastServer(void);
 extern int CreateUnicastClient(struct sockaddr_in *pSockAddr);
 

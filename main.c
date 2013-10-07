@@ -55,7 +55,6 @@ int main(int argc, char **argv)
 	vExecutableLen = strlen(argv[0]);
 	if(vLen <= vExecutableLen )
 	{
-		fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
 		// If the executable name is ws-client
 		if(strcmp(&argv[0][vExecutableLen-vLen],"ws-client")==0)
 		{
@@ -63,7 +62,6 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
 			return _server(argc, argv);
 		}		
 	}
@@ -72,15 +70,31 @@ int main(int argc, char **argv)
 
 int _server(int argc, char **argv)
 {
-	int msocket_cli = 0,msocket_srv = 0;	
-	char *pAddress=NULL;
+	int msocket_cli = 0, msocket_cli2 = 0, msocket_srv = 0, msocket_srv2 = 0;	
+	char *pAddress=NULL, *pAddressWifi=NULL;
 	struct soap* pSoap = NULL;
 
-	pAddress = getMyIpString();
-	InitMyRandom(pAddress);
-	msocket_cli = CreateMulticastClient(MULTICAST_PORT);	
-	msocket_srv = CreateMulticastServer();
+  initMyIpString();
 	
+	// For MAC only
+	pAddress = getMyIpString("en0");
+	pAddressWifi = getMyIpString("en1");
+	//pAddress = getMyIpString("eth0");
+	//pAddressWifi = getMyIpString("eth1");
+		
+	InitMyRandom(pAddress);
+	
+		
+	if(pAddress)
+	{
+		msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
+	}
+	if(pAddressWifi)
+	{
+		msocket_cli2 = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
+	}
+	
+	msocket_srv = CreateMulticastServer();
 	pSoap = MyMalloc(sizeof(struct soap));
 	soap_init1(pSoap, SOAP_IO_UDP);
 			
@@ -88,11 +102,12 @@ int _server(int argc, char **argv)
 	//pSoap->recvfd = msocket_srv;
 	pSoap->recvsk = msocket_srv;
 
-	usleep(500000);
-	SendHello(msocket_cli); 
-	SendHello(msocket_cli); 
-	SendHello(msocket_cli); 
-	usleep(500000);
+	usleep(50000);SendHello(msocket_cli); 
+	usleep(50000);SendHello(msocket_cli2); 
+	usleep(50000);SendHello(msocket_cli); 
+	usleep(50000);SendHello(msocket_cli2);
+	usleep(50000);SendHello(msocket_cli); 
+	usleep(50000);SendHello(msocket_cli2);	 	
 		
 	thread_ret=pthread_create( &tptr[thread_no].thread_tid, NULL, (void *) RecvThread, (void*)thread_no );
 	if(thread_ret!=0)
@@ -124,13 +139,20 @@ int _server(int argc, char **argv)
 int _client(int argc, char **argv)
 {
 	int vLen = 0, vExecutableLen = 0;
-	int msocket_cli = 0, msocket_srv = 0;
-	char *pAddress=NULL;
+	int msocket_cli = 0, msocket_cli2= 0;
+	char *pAddress=NULL, *pAddressWifi=NULL;
 	int vDataLen = 1024*5;
 	char pDataBuf[1024*5];
 	
-	pAddress = getMyIpString();
-	msocket_cli = CreateMulticastClient(MULTICAST_PORT);
+	initMyIpString();
+	
+	pAddress = getMyIpString("en0");
+	pAddressWifi = getMyIpString("en1");
+	
+	if(pAddress)
+		msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
+	if(pAddressWifi)
+		msocket_cli2 = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
 	
 	usleep(500000);
 	if(argc>=2)
@@ -225,12 +247,17 @@ void RecvThread(void* data)
 {
 	int i;
 	int msqid;
-	int msocket_cli = 0;
-	char *pAddress=NULL;    
+	int msocket_cli = 0, msocket_cli2 = 0;
+	char *pAddress=NULL, *pAddressWifi=NULL;    
 	pthread_detach(pthread_self());
     
-	msocket_cli = CreateMulticastClient(MULTICAST_PORT);
-	    
+  pAddress = getMyIpString("en0");
+  pAddressWifi = getMyIpString("en1");
+  if(pAddress)
+		msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
+  if(pAddressWifi)
+		msocket_cli = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
+			    
   DBG("RecvThread start....\n");
 	if((msqid = msgget(ONVIF_DIS_MSG_KEY, PERMS | IPC_CREAT)) >= 0)
 	{

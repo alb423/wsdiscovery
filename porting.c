@@ -26,7 +26,7 @@ char *nativeGetXAddrs()
 {
 	char pTmp[1024] = {0};
 	
-	sprintf(pTmp, "http://%s:80/onvif/device_service", getMyIpString());
+	sprintf(pTmp, "http://%s:80/onvif/device_service", getMyIpString("en0"));
 	return CopyString(pTmp);
 }
 
@@ -64,7 +64,7 @@ char *nativeGetScopesItem()
 onvif://www.onvif.org/type/audio_encoder \
 onvif://www.onvif.org/type/video_encoder \
 onvif://www.onvif.org/name/albert \
-onvif://www.onvif.org/hardware/undefined \
+onvif://www.onvif.org/hardware/albertTest \
 onvif://www.onvif.org/location/ \
 onvif://www.onvif.org/Profile/Streaming");
 }

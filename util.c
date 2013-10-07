@@ -17,8 +17,8 @@
 #include "soapH.h"
 #include "porting.h"
 
-char gpLocalAddr[32]={0};
-char gpMacAddr[32]={0};
+char gpLocalAddr[NET_MAX_INTERFACE][32]={0};
+char gpMacAddr[NET_MAX_INTERFACE][32]={0};
 #define LOCAL_ADDR gpLocalAddr//"192.168.2.102"
 
 struct sockaddr_in gMSockAddr;
@@ -75,12 +75,30 @@ char * CopyString(char *pSrc)
 
 char * getMyMacAddress(void)
 {
-	return CopyString(gpMacAddr);
+	return CopyString(gpMacAddr[0]);
 }
 
 // Utilities of Network
-char * getMyIpString(void)
+char * getMyIpString(char *pIfName)
 {
+	int i = 0;
+	if(pIfName==NULL)
+		return NULL;
+		
+	for(i=0;i<NET_MAX_INTERFACE;i++)
+	{
+    if(strncmp("en1", pIfName, 3)==0)
+    {
+    	return gpLocalAddr[1];
+    } 
+	}
+	return gpLocalAddr[0];
+}
+
+
+char * initMyIpString(void)
+{
+	int vInterfaceCount=0;
 		char pInterface[128]={0};
     struct ifaddrs * ifAddrStruct=NULL;
     struct ifaddrs * ifa=NULL;
@@ -88,7 +106,8 @@ char * getMyIpString(void)
 
     getifaddrs(&ifAddrStruct);
 
-    for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) {
+    for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) 
+    {
         if (ifa ->ifa_addr->sa_family==AF_INET) 
         { 	
         		// check it is IP4
@@ -97,13 +116,14 @@ char * getMyIpString(void)
             char addressBuffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
             DBG("%s IP Address %s\n", ifa->ifa_name, addressBuffer); 
-            
-            // Note: you may set local address for different interface. For example:eth0, eth1
-		        memcpy(gpLocalAddr, addressBuffer, strlen(addressBuffer));
-		        memset(pInterface, 0 ,128);
-		        memcpy(pInterface, ifa->ifa_name, strlen(ifa->ifa_name));
-		        
-
+            if(strncmp(ifa->ifa_name, "en", 2)==0)
+            {
+							// Note: you may set local address for different interface. For example:eth0, eth1
+							memcpy(gpLocalAddr[vInterfaceCount], addressBuffer, strlen(addressBuffer));
+							memset(pInterface, 0 ,128);
+							memcpy(pInterface, ifa->ifa_name, strlen(ifa->ifa_name));
+							vInterfaceCount++;
+			      } 
         } 
         else if (ifa->ifa_addr->sa_family==AF_INET6) 
         { 	
@@ -139,15 +159,15 @@ char * getMyIpString(void)
     	(unsigned char)ifr.ifr_hwaddr.sa_data[5]);
   	}
   	#else
-  		sprintf(gpMacAddr, "10ddb1acc6ee");
+  		sprintf(gpMacAddr[0], "10ddb1acc6ee");
+  		sprintf(gpMacAddr[1], "4c8d79eaee74");
   	#endif
   	
   	
-    DBG("gpLocalAddr is set to %s, MAC is %s\n\n", gpLocalAddr, gpMacAddr);    
+    DBG("gpLocalAddr is set to %s, MAC is %s\n\n", gpLocalAddr[0], gpMacAddr[0]);    
     if (ifAddrStruct!=NULL) freeifaddrs(ifAddrStruct);
-    return gpLocalAddr;
+    return gpLocalAddr[0];
 }
-
 
 int CreateUnicastClient(struct sockaddr_in *pSockAddr)
 {
@@ -179,7 +199,7 @@ int CreateUnicastClient(struct sockaddr_in *pSockAddr)
 }
 
 
-int CreateMulticastClient(int port)
+int CreateMulticastClient(char *pAddress, int port)
 {
 	// http://www.tenouk.com/Module41c.html
 	struct in_addr localInterface;
@@ -208,7 +228,9 @@ int CreateMulticastClient(int port)
 	gMSockAddr.sin_addr.s_addr = inet_addr(MULTICAST_ADDR);
 	gMSockAddr.sin_port = htons(port);
 	  	
-	localInterface.s_addr = inet_addr(LOCAL_ADDR);
+	//localInterface.s_addr = inet_addr(gpLocalAddr[0]);//inet_addr(LOCAL_ADDR);
+	localInterface.s_addr = inet_addr(pAddress);
+	
 	if(setsockopt(sd, IPPROTO_IP, IP_MULTICAST_IF, (char *)&localInterface.s_addr, sizeof(localInterface)) < 0)
 	{
 	  perror("Setting local interface error");
@@ -224,7 +246,8 @@ int CreateMulticastServer(void)
 {
 	struct ip_mreq group;
 	struct sockaddr_in localSock;
-	int sd;
+	struct in_addr interface_Addr;
+	int i, sd;
 	
 	sd = socket(AF_INET, SOCK_DGRAM, 0);
 	if(sd < 0)
@@ -250,7 +273,8 @@ int CreateMulticastServer(void)
 	memset((char *) &localSock, 0, sizeof(localSock));
 	localSock.sin_family = AF_INET;
 	localSock.sin_port = htons(MULTICAST_PORT);
-	localSock.sin_addr.s_addr = INADDR_ANY;//inet_addr(LOCAL_ADDR);
+	localSock.sin_addr.s_addr = INADDR_ANY;
+	//localSock.sin_addr.s_addr = inet_addr(pAddress);
 	if(bind(sd, (struct sockaddr*)&localSock, sizeof(localSock)))
 	{
 		perror("Binding datagram socket error");
@@ -260,16 +284,39 @@ int CreateMulticastServer(void)
 	else
 		DBG("Binding datagram socket...OK.\n");
 	  	
-	group.imr_multiaddr.s_addr = inet_addr(MULTICAST_ADDR);
-	group.imr_interface.s_addr = inet_addr(LOCAL_ADDR);
-	if(setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group)) < 0)
+
+	
+	for(i=0;i<NET_MAX_INTERFACE;i++)
 	{
-		perror("Adding multicast group error");
+		group.imr_multiaddr.s_addr = inet_addr(MULTICAST_ADDR);
+		if(strlen(gpLocalAddr[i])!=0)
+		{
+			group.imr_interface.s_addr = inet_addr(gpLocalAddr[i]);		
+			if(setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group)) < 0)
+			{
+				perror("setsockopt IP_ADD_MEMBERSHIP error");
+				close(sd);
+				exit(1);
+			}
+			else
+			{
+					DBG("setsockopt IP_ADD_MEMBERSHIP %s ...OK.\n", gpLocalAddr[i]);
+;
+			}
+		}
+	}
+
+
+	interface_Addr = localSock.sin_addr;
+	if(setsockopt(sd, IPPROTO_IP, IP_MULTICAST_IF, (char *)&interface_Addr, sizeof(interface_Addr)) < 0)
+	{
+		perror("setsockopt IP_MULTICAST_IF error");
 		close(sd);
 		exit(1);
-	}
+	}		
 	else
-		DBG("Adding multicast group...OK.\n");
+		DBG("Adding multicast group %s ...OK.\n", MULTICAST_ADDR);
+
 
 	return sd;
 }
