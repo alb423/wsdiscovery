@@ -77,8 +77,8 @@ int _server(int argc, char **argv)
   initMyIpString();
 	
 	// For MAC only
-	pAddress = getMyIpString("en0");
-	pAddressWifi = getMyIpString("en1");
+	pAddress = getMyIpString(INTERFACE_NAME_1);
+	pAddressWifi = getMyIpString(INTERFACE_NAME_2);
 	//pAddress = getMyIpString("eth0");
 	//pAddressWifi = getMyIpString("eth1");
 		
@@ -90,10 +90,12 @@ int _server(int argc, char **argv)
 		msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
 	}
 	if(pAddressWifi)
-	{
+	{		
 		msocket_cli2 = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
 	}
 	
+
+			
 	msocket_srv = CreateMulticastServer();
 	pSoap = MyMalloc(sizeof(struct soap));
 	soap_init1(pSoap, SOAP_IO_UDP);
@@ -146,8 +148,8 @@ int _client(int argc, char **argv)
 	
 	initMyIpString();
 	
-	pAddress = getMyIpString("en0");
-	pAddressWifi = getMyIpString("en1");
+	pAddress = getMyIpString(INTERFACE_NAME_1);
+	pAddressWifi = getMyIpString(INTERFACE_NAME_2);
 	
 	if(pAddress)
 		msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
@@ -251,8 +253,8 @@ void RecvThread(void* data)
 	char *pAddress=NULL, *pAddressWifi=NULL;    
 	pthread_detach(pthread_self());
     
-  pAddress = getMyIpString("en0");
-  pAddressWifi = getMyIpString("en1");
+  pAddress = getMyIpString(INTERFACE_NAME_1);
+  pAddressWifi = getMyIpString(INTERFACE_NAME_2);
   if(pAddress)
 		msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
   if(pAddressWifi)

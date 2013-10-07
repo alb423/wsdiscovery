@@ -26,7 +26,7 @@ char *nativeGetXAddrs()
 {
 	char pTmp[1024] = {0};
 	
-	sprintf(pTmp, "http://%s:80/onvif/device_service", getMyIpString("en0"));
+	sprintf(pTmp, "http://%s:80/onvif/device_service", getMyIpString(INTERFACE_NAME_1));
 	return CopyString(pTmp);
 }
 

@@ -209,6 +209,11 @@ int CreateMulticastClient(char *pAddress, int port)
 	timeout.tv_sec  = 10;
 	timeout.tv_usec = 0;
 		
+	if(!pAddress)
+		return -1;
+	if(strlen(pAddress)==0)
+		return -1;
+			
 	sd = socket(AF_INET, SOCK_DGRAM, 0);
 	if(sd < 0)
 	{
@@ -301,7 +306,6 @@ int CreateMulticastServer(void)
 			else
 			{
 					DBG("setsockopt IP_ADD_MEMBERSHIP %s ...OK.\n", gpLocalAddr[i]);
-;
 			}
 		}
 	}
