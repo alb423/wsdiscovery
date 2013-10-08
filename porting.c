@@ -144,3 +144,4 @@ void nativeChangeDiscoveryMode(char Mode)
       _gDiscoveryMode = DISCOVERABLE;
    }
 }
+

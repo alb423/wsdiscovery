@@ -478,4 +478,10 @@ unsigned int our_random32()
 void UuidGen(char *uuidbuf)
 {
    sprintf(uuidbuf, "%08x-%04x-%04x-%04x-%08x%04x",our_random32(), our_random16(),our_random16(),our_random16(),our_random32(), our_random16());    
-}             
+}     
+
+
+void noprintf(char *format, ...)
+{
+   ;
+}        

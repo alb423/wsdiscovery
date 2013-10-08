@@ -5,11 +5,15 @@
 #include <netinet/in.h>
 #include <ifaddrs.h>
 
-#define _DEUBG_
+#ifndef noprintf
+extern void noprintf(char *format, ...);
+#endif
+   
+//#define _DEUBG_
 #ifdef _DEUBG_
 	#define DBG printf
 #else
-	#define DBG 
+	#define DBG noprintf
 #endif
 
 #define MULTICAST_ADDR "239.255.255.250"

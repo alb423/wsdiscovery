@@ -119,10 +119,10 @@ int _server(int argc, char **argv)
       pSoap->recvsk = msocket_srv;
             
       soap_serve(pSoap);
-      fprintf(stderr, "%s %s :%d peer addr=%s, port=%d, error=%d\n",__FILE__,__func__, __LINE__, inet_ntoa(pSoap->peer.sin_addr), pSoap->peer.sin_port,  pSoap->error);	
+      DBG("%s %s :%d peer addr=%s, port=%d, error=%d\n",__FILE__,__func__, __LINE__, inet_ntoa(pSoap->peer.sin_addr), pSoap->peer.sin_port,  pSoap->error);	
       if(pSoap->header)
       {
-         fprintf(stderr, "%s %s :%d Action = %s\n",__FILE__,__func__, __LINE__, pSoap->header->wsa5__Action);
+         DBG("%s %s :%d Action = %s\n",__FILE__,__func__, __LINE__, pSoap->header->wsa5__Action);
          if(strstr(pSoap->header->wsa5__Action,"fault")!=NULL)
          {
             // exit the loop when receive fault
@@ -176,13 +176,13 @@ int _client(int argc, char **argv)
 
 			SendProbe(msocket_cli); 
 			
-			fprintf(stderr, "Waiting Response\n");
+			DBG("Waiting Response\n");
 			
 			vDataLen = sizeof(pDataBuf);
 			vReciveLen = recvfrom(msocket_cli, pDataBuf, (SOAP_WINSOCKINT)vDataLen, MSG_WAITALL, (struct sockaddr*)&vxSockAddr, &vSockLen);
-			fprintf(stderr, "got Response, vReciveLen=%d, \n", vReciveLen);
-			fprintf(stderr, "msocket_cli=%d, rsp s_addr=%s, rsp sin_port=%d\n", msocket_cli, inet_ntoa(vxSockAddr.sin_addr), htons(vxSockAddr.sin_port));
-			fprintf(stderr, "Buf=%s\n", pDataBuf);
+			DBG("got Response, vReciveLen=%d, \n", vReciveLen);
+			DBG("msocket_cli=%d, rsp s_addr=%s, rsp sin_port=%d\n", msocket_cli, inet_ntoa(vxSockAddr.sin_addr), htons(vxSockAddr.sin_port));
+			DBG("Buf=%s\n", pDataBuf);
 		}					
 		else if(strcmp(argv[1],"3")==0)
 		{
@@ -193,13 +193,13 @@ int _client(int argc, char **argv)
 
 			SendResolve(msocket_cli); 
 			
-			fprintf(stderr, "Waiting Response\n");
+			DBG("Waiting Response\n");
 			
 			vDataLen = sizeof(pDataBuf);
 			vErr = recvfrom(msocket_cli, pDataBuf, (SOAP_WINSOCKINT)vDataLen, MSG_WAITALL, (struct sockaddr*)&vxSockAddr, &vSockLen);
-			fprintf(stderr, "got Response, vErr=%d, \n", vErr);
-			fprintf(stderr, "msocket_cli=%d, rsp s_addr=%s, rsp sin_port=%d\n", msocket_cli, inet_ntoa(vxSockAddr.sin_addr), htons(vxSockAddr.sin_port));
-			fprintf(stderr, "Buf=%s\n", pDataBuf);					
+			DBG( "got Response, vErr=%d, \n", vErr);
+			DBG("msocket_cli=%d, rsp s_addr=%s, rsp sin_port=%d\n", msocket_cli, inet_ntoa(vxSockAddr.sin_addr), htons(vxSockAddr.sin_port));
+			DBG("Buf=%s\n", pDataBuf);					
 		}					
 		else if(strcmp(argv[1],"4")==0)
 		{

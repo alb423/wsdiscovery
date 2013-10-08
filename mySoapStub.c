@@ -599,24 +599,24 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 {
 	int vSocket=-1;
 	int bScopeValid=1;
-	fprintf(stderr, "%s %s :%d sendfd=%d\n",__FILE__,__func__, __LINE__, pSoap->sendfd);
+	DBG("%s %s :%d sendfd=%d\n",__FILE__,__func__, __LINE__, pSoap->sendfd);
 	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
 	{
-		fprintf(stderr, "%s %s :%d NONDISCOVERABLE\n",__FILE__,__func__, __LINE__);
+		DBG("%s %s :%d NONDISCOVERABLE\n",__FILE__,__func__, __LINE__);
 		return SOAP_OK;
 	}
 			
 #if 0	
-	fprintf(stderr, "\n======\n");
-	fprintf(stderr, "vLen=%zd, buf=\n%s\n", pSoap->buflen,pSoap->buf);
+	DBG("\n======\n");
+	DBG("vLen=%zd, buf=\n%s\n", pSoap->buflen,pSoap->buf);
 	if(wsdd__Probe->Types)
-		fprintf(stderr, "Types=%s\n",wsdd__Probe->Types);	
+		DBG("Types=%s\n",wsdd__Probe->Types);	
 	if(wsdd__Probe->Scopes)
 	{
-		fprintf(stderr, "Scopes->__item=%s\n",wsdd__Probe->Scopes->__item);	
-		fprintf(stderr, "Scopes->MatchBy=%s\n",wsdd__Probe->Scopes->MatchBy);	
+		DBG("Scopes->__item=%s\n",wsdd__Probe->Scopes->__item);	
+		DBG("Scopes->MatchBy=%s\n",wsdd__Probe->Scopes->MatchBy);	
 	}
-	fprintf(stderr, "======\n\n");
+	DBG(, "======\n\n");
 #endif	
 
 	if(wsdd__Probe->Scopes)
@@ -668,7 +668,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 			bScopeValid = 0;
 		}			
 		free(pType);
-      printf("wsdd__Probe->Types = %s\n",wsdd__Probe->Types);
+      DBG("wsdd__Probe->Types = %s\n",wsdd__Probe->Types);
 	}
 	
 	// Test only
@@ -699,10 +699,10 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 				#endif
 			}
       }
-      fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+      DBG("%s %s :%d\n",__FILE__,__func__, __LINE__);
 		SendProbeMatches(vSocket, &pSoap->peer, pSenderMessageId);
 		usleep(500000);
-		fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+		DBG("%s %s :%d\n",__FILE__,__func__, __LINE__);
 		SendProbeMatches(vSocket, &pSoap->peer, pSenderMessageId);
 		
 		//if(pSenderMessageId)
@@ -710,7 +710,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 	}
 	else
 	{
-	   fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	   DBG( "%s %s :%d\n",__FILE__,__func__, __LINE__);
 		// Chapter 6.3.1 Target Service
 		// If a Target Service receives a Probe that does not match, it MUST NOT respond with a Probe Match.
 		// SendFault(vSocket, &pSoap->peer);
@@ -724,10 +724,10 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Resolve(struct soap *pSoap, struct wsdd__Resol
 	int vSocket=-1;	
 	int bResolveValid=1;
 		
-	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	DBG("%s %s :%d\n",__FILE__,__func__, __LINE__);
 	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
 	{
-		fprintf(stderr, "%s %s :%d NONDISCOVERABLE\n",__FILE__,__func__, __LINE__);
+		DBG("%s %s :%d NONDISCOVERABLE\n",__FILE__,__func__, __LINE__);
 		return SOAP_OK;
 	}
 		
@@ -766,30 +766,30 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Resolve(struct soap *pSoap, struct wsdd__Resol
 // Unused callback function
 SOAP_FMAC5 int SOAP_FMAC6 SOAP_ENV__Fault(struct soap *pSoap, char *faultcode, char *faultstring, char *faultactor, struct SOAP_ENV__Detail *detail, struct SOAP_ENV__Code *SOAP_ENV__Code, struct SOAP_ENV__Reason *SOAP_ENV__Reason, char *SOAP_ENV__Node, char *SOAP_ENV__Role, struct SOAP_ENV__Detail *SOAP_ENV__Detail)
 {
-	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	DBG("%s %s :%d\n",__FILE__,__func__, __LINE__);
 	return SOAP_OK;
 }
 
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Hello(struct soap *pSoap, struct wsdd__HelloType *wsdd__Hello)
 {
-	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	DBG("%s %s :%d\n",__FILE__,__func__, __LINE__);
 	return SOAP_OK;
 }
 
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Bye(struct soap *pSoap, struct wsdd__ByeType *wsdd__Bye)
 {
-	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	DBG("%s %s :%d\n",__FILE__,__func__, __LINE__);
 	return SOAP_OK;
 }
 
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__ProbeMatches(struct soap *pSoap, struct wsdd__ProbeMatchesType *wsdd__ProbeMatches)
 {
-	fprintf(stderr, "%s %s :%d sendfd=%d\n",__FILE__,__func__, __LINE__, pSoap->sendfd);
+	DBG("%s %s :%d sendfd=%d\n",__FILE__,__func__, __LINE__, pSoap->sendfd);
 	return SOAP_OK;
 }	
 
 SOAP_FMAC5 int SOAP_FMAC6 __wsdd__ResolveMatches(struct soap *pSoap, struct wsdd__ResolveMatchesType *wsdd__ResolveMatches)
 {
-	fprintf(stderr, "%s %s :%d\n",__FILE__,__func__, __LINE__);
+	DBG("%s %s :%d\n",__FILE__,__func__, __LINE__);
 	return SOAP_OK;
 }
