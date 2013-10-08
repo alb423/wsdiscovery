@@ -70,6 +70,7 @@ int main(int argc, char **argv)
 
 int _server(int argc, char **argv)
 {
+   int i=0;
    int msocket_cli = 0, msocket_cli2 = 0, msocket_srv = 0, msocket_srv2 = 0;	
    char *pAddress=NULL, *pAddressWifi=NULL;
    struct soap* pSoap = NULL;
@@ -97,12 +98,17 @@ int _server(int argc, char **argv)
    pSoap = soap_new1(SOAP_IO_UDP);
    
    // send 3 times to avoid packet loss 
-   usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli); 
-   usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli2); 
-   usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli); 
-   usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli2);
-   usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli); 
-   usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli2);	 	
+   for(i=0;i<3;i++)
+   {
+      if(msocket_cli>0)
+         SendHello(msocket_cli); 
+      if(msocket_cli2>0)      
+         SendHello(msocket_cli2); 
+	}
+
+	
+	close(msocket_cli);
+	close(msocket_cli2);
 
    thread_ret=pthread_create( &tptr[thread_no].thread_tid, NULL, (void *) RecvThread, (void*)thread_no );
    if(thread_ret!=0)
@@ -126,6 +132,7 @@ int _server(int argc, char **argv)
          if(strstr(pSoap->header->wsa5__Action,"fault")!=NULL)
          {
             // exit the loop when receive fault
+            // TODO: mark me
             break;
          }
       }
@@ -256,18 +263,7 @@ void RecvThread(void* data)
    int msocket_cli = 0, msocket_cli2 = 0;
    char *pAddress=NULL, *pAddressWifi=NULL;    
    pthread_detach(pthread_self());
-   
-   pAddress = getMyIpString(INTERFACE_NAME_1);
-   pAddressWifi = getMyIpString(INTERFACE_NAME_2);
-   
-   if(pAddress)
-      msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
-   if(pAddressWifi)
-      msocket_cli = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
-      
-   free(pAddress);
-   free(pAddressWifi);
-  			    
+     			    
    DBG("RecvThread start....\n");
    if((msqid = msgget(ONVIF_DIS_MSG_KEY, PERMS | IPC_CREAT)) >= 0)
    {
@@ -277,21 +273,43 @@ void RecvThread(void* data)
          DBG("start recv msg .. \n");
          if(msgrcv(msqid, &recvmsg, 4, 0, 0) > 0)
          {
+            initMyIpString();   
+            pAddress = getMyIpString(INTERFACE_NAME_1);
+            pAddressWifi = getMyIpString(INTERFACE_NAME_2);
+            
+            if(pAddress)
+               msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
+            if(pAddressWifi)
+               msocket_cli2 = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
+               
+            free(pAddress);
+            free(pAddressWifi);
+               
             if(recvmsg.mtype == ONVIF_MSG_UPDATE_SCOPES)
             {
                nativeIncreaseMetadataVersion();
-               SendHello(msocket_cli);
-               SendHello(msocket_cli);
-               SendHello(msocket_cli);
+               // send 3 times to avoid packet loss 
+               for(i=0;i<3;i++)
+               {
+                  if(msocket_cli>0)
+                     SendHello(msocket_cli); 
+                  if(msocket_cli2>0)      
+                     SendHello(msocket_cli2); 
+            	}               
             } 
             else if(recvmsg.mtype == ONVIF_MSG_REBOOT)
             {
                for (i=0;i<2;i++)
                {
-                  sleep(2);
-                  SendBye(msocket_cli);
-                  SendBye(msocket_cli);
-                  SendBye(msocket_cli);
+                  // may sleep for a while, so that http response can send before Bye
+                  sleep(1);
+                  for(i=0;i<3;i++)
+                  {
+                     if(msocket_cli>0)
+                        SendBye(msocket_cli); 
+                     if(msocket_cli2>0)      
+                        SendBye(msocket_cli2); 
+               	}                                 
                }
             } 
             else if(recvmsg.mtype == ONVIF_MSG_DISCOVERYMODE)
@@ -299,11 +317,19 @@ void RecvThread(void* data)
                //initDiscoveryMode();
                DBG("recvmsg.mtext[0]=%c\n",recvmsg.mtext[0]);
                nativeChangeDiscoveryMode(recvmsg.mtext[0]);
-               SendHello(msocket_cli);
+               for(i=0;i<3;i++)
+               {
+                  if(msocket_cli>0)
+                     SendHello(msocket_cli); 
+                  if(msocket_cli2>0)      
+                     SendHello(msocket_cli2); 
+            	}  
             }
-            usleep(50);
+            close(msocket_cli);
+	         close(msocket_cli2);
+            usleep(500000);
          }
-         sleep(1);
+         usleep(500000);
       }
       
       if(msgctl(msqid, IPC_RMID, (struct msqid_ds *) 0) < 0)

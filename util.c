@@ -211,7 +211,7 @@ int CreateUnicastClient(struct sockaddr_in *pSockAddr)
 {
    // http://www.tenouk.com/Module41c.html
    struct in_addr localInterface;
-   int sd;
+   int sd=-1;
    
    struct timeval timeout;
    timeout.tv_sec  = 10;
@@ -241,7 +241,7 @@ int CreateMulticastClient(char *pAddress, int port)
 {
    // http://www.tenouk.com/Module41c.html
    struct in_addr localInterface;
-   int sd;
+   int sd=-1;
    
    struct timeval timeout;
    timeout.tv_sec  = 10;

@@ -9,7 +9,7 @@
 extern void noprintf(char *format, ...);
 #endif
    
-//#define _DEUBG_
+#define _DEUBG_
 #ifdef _DEUBG_
 	#define DBG printf
 #else

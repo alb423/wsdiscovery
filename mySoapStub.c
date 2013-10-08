@@ -1,3 +1,7 @@
+/*
+   If you find any bug, please let me know. Mail to alb423@gmail.com
+*/
+
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
@@ -94,6 +98,10 @@ int SendHello(int socket)
 	free(pXAddrs);
 	free(pMatchBy);
 
+	// Chapter 3.1.3
+	// Before sending somemessage types. Target ServiceMust wait for a timer to elapse before sending the message.
+	// This timer MUST be set to a random value between 0 and APP_MAX_DELAY
+	usleep( (random()%APP_MAX_DELAY) ); 
 	
 	char *pBuffer = getXmlBufferData();
 	int vBufLen = strlen(pBuffer);
@@ -142,8 +150,6 @@ int SendBye(int socket)
 	pSoap->header->wsa5__Action = MySoapCopyString(pSoap, pAction);
 	pSoap->header->wsa5__MessageID = MySoapCopyString(pSoap, pMessageID);
 	pSoap->header->wsa5__To = MySoapCopyString(pSoap, pTo);
-	
-	// This part cause segmentation fault, because align at 4-, 8- or 16-byte boundary
 	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) soap_malloc(pSoap,sizeof(struct wsdd__AppSequenceType));
 	soap_default_wsdd__AppSequenceType(pSoap, pSoap->header->wsdd__AppSequence);
 	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
@@ -192,6 +198,10 @@ int SendBye(int socket)
 	free(pXAddrs);
 	free(pMatchBy);
 
+	// Chapter 3.1.3
+	// Before sending somemessage types. Target ServiceMust wait for a timer to elapse before sending the message.
+	// This timer MUST be set to a random value between 0 and APP_MAX_DELAY
+   usleep( (random()%APP_MAX_DELAY) ); 
    
 	char *pBuffer = getXmlBufferData();
 	int vBufLen = strlen(pBuffer);	
@@ -214,36 +224,55 @@ int SendBye(int socket)
 int SendProbe(int socket)
 {
 	int vErr = 0;
-	struct __wsdd__Probe *pWsdd__Probe = MyMalloc(sizeof(struct __wsdd__Probe));
-	struct wsdd__ProbeType *pWsdd__ProbeType = MyMalloc(sizeof(struct wsdd__ProbeType));	
+	struct __wsdd__Probe *pWsdd__Probe = NULL;
+	struct wsdd__ProbeType *pWsdd__ProbeType = NULL;	
 	struct soap *pSoap=NULL;
-	
-	pSoap = soap_new1(SOAP_IO_UDP);
-	pSoap->fsend = mysend;
+	char *pAction=NULL, *pMessageID=NULL, *pTo=NULL;
+	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pXAddrs=NULL, *pMatchBy=NULL;
+				
+	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
+		return 0;
+		
+	pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Probe");
+	pMessageID = nativeGetMessageId();
+	pTo = nativeGetTo();
+   pEndpointAddress = nativeGetEndpointAddress();
+   pTypes = nativeGetTypes();
+   pItem = nativeGetScopesItem();
+   pMatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
 
+	pSoap = soap_new1(SOAP_IO_UDP);		
+	pSoap->fsend = mysend;
+	
 	// Build SOAP Header
 	soap_header(pSoap);
-	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Probe");
-	pSoap->header->wsa5__MessageID = nativeGetMessageId();
-	pSoap->header->wsa5__To = nativeGetTo();
+	pSoap->header->wsa5__Action = MySoapCopyString(pSoap, pAction);
+	pSoap->header->wsa5__MessageID = MySoapCopyString(pSoap, pMessageID);
+	pSoap->header->wsa5__To = MySoapCopyString(pSoap, pTo);
 	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) soap_malloc(pSoap,sizeof(struct wsdd__AppSequenceType));
+	soap_default_wsdd__AppSequenceType(pSoap, pSoap->header->wsdd__AppSequence);
 	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
 	pSoap->header->wsdd__AppSequence->MessageNumber = nativeGetMessageNumber();
 	pSoap->header->wsdd__AppSequence->SequenceId = NULL;
+	
 
-	// Build Hello Message
+	// Build Probe Message
+	pWsdd__Probe = (struct __wsdd__Probe *)soap_malloc(pSoap, sizeof(struct __wsdd__Probe));
 	soap_default___wsdd__Probe(pSoap, pWsdd__Probe);
+	pWsdd__ProbeType = (struct wsdd__ProbeType *)soap_malloc(pSoap,sizeof(struct wsdd__ProbeType));
+	soap_default_wsdd__ProbeType(pSoap, pWsdd__ProbeType); 
+	
 	pSoap->encodingStyle = NULL;
 	
 	pWsdd__Probe->wsdd__Probe = pWsdd__ProbeType;   
-	pWsdd__ProbeType->Types = nativeGetTypes();
+	pWsdd__ProbeType->Types = MySoapCopyString(pSoap, pTypes);
 	pWsdd__ProbeType->Scopes = (struct wsdd__ScopesType *)soap_malloc(pSoap, sizeof(struct wsdd__ScopesType));
-	pWsdd__ProbeType->Scopes->MatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
+	pWsdd__ProbeType->Scopes->MatchBy = MySoapCopyString(pSoap, "http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
 	#if 1
-		pWsdd__ProbeType->Scopes->__item = nativeGetScopesItem();
+		pWsdd__ProbeType->Scopes->__item = MySoapCopyString(pSoap, pItem);
 	#else
 		// Test for invalid scope
-		pWsdd__ProbeType->Scopes->__item = CopyString("undefinedScope");
+		pWsdd__ProbeType->Scopes->__item = MySoapCopyString(pSoap, "undefinedScope");
 	#endif
 	   
 	soap_serializeheader(pSoap);
@@ -260,6 +289,19 @@ int SendProbe(int socket)
 	soap_end(pSoap);
    soap_free(pSoap);
    		
+   free(pAction);
+   free(pMessageID);
+   free(pTo);
+	free(pEndpointAddress);
+	free(pTypes);
+	free(pItem);
+	free(pMatchBy);
+	   		
+	// Chapter 3.1.3
+	// Before sending somemessage types. Target ServiceMust wait for a timer to elapse before sending the message.
+	// This timer MUST be set to a random value between 0 and APP_MAX_DELAY   		
+   usleep( (random()%APP_MAX_DELAY) ); 
+   
 	char *pBuffer = getXmlBufferData();
 	int vBufLen = strlen(pBuffer);		
 	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
@@ -278,29 +320,39 @@ int SendProbe(int socket)
 int SendResolve(int socket)
 {
 	int vErr = 0;
-	struct __wsdd__Resolve *pWsdd__Resolve = MyMalloc(sizeof(struct __wsdd__Resolve));
-	struct wsdd__ResolveType *pWsdd__ResolveType = MyMalloc(sizeof(struct wsdd__ResolveType));	
+	struct __wsdd__Resolve *pWsdd__Resolve = NULL;
+	struct wsdd__ResolveType *pWsdd__ResolveType = NULL;	
 	struct soap *pSoap=NULL;
 
-	pSoap = soap_new1(SOAP_IO_UDP);
-	pSoap->fsend = mysend;
+	char *pAction=NULL, *pMessageID=NULL, *pTo=NULL;
+	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pXAddrs=NULL, *pMatchBy=NULL;
+				
+	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
+		return 0;
+		
+	pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Resolve");
+	pMessageID = nativeGetMessageId();
+	pTo = nativeGetTo();
+   pEndpointAddress = nativeGetEndpointAddress();
+   pTypes = nativeGetTypes();
+   pItem = nativeGetScopesItem();
+   pMatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
 
-	// Build SOAP Header
-	soap_header(pSoap);
-	pSoap->header->wsa5__Action = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Resolve");
-	pSoap->header->wsa5__MessageID = nativeGetMessageId();
-	pSoap->header->wsa5__To = nativeGetTo();
-	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) soap_malloc(pSoap,sizeof(struct wsdd__AppSequenceType));
-	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
-	pSoap->header->wsdd__AppSequence->MessageNumber = nativeGetMessageNumber();
-	pSoap->header->wsdd__AppSequence->SequenceId = NULL;
-	
+	pSoap = soap_new1(SOAP_IO_UDP);		
+	pSoap->fsend = mysend;
+		
+			
 	// Build Resolve Message
+	pWsdd__Resolve = (struct __wsdd__Resolve *)soap_malloc(pSoap, sizeof(struct __wsdd__Resolve));
 	soap_default___wsdd__Resolve(pSoap, pWsdd__Resolve);
+	pWsdd__ResolveType = (struct wsdd__ResolveType *)soap_malloc(pSoap,sizeof(struct wsdd__ResolveType));
+	soap_default_wsdd__ResolveType(pSoap, pWsdd__ResolveType); 
+		
 	pSoap->encodingStyle = NULL;
 	
 	pWsdd__Resolve->wsdd__Resolve = pWsdd__ResolveType;   
-   pWsdd__ResolveType->wsa5__EndpointReference.Address = nativeGetEndpointAddress();
+   pWsdd__ResolveType->wsa5__EndpointReference.Address = MySoapCopyString(pSoap, pEndpointAddress);
+	
 	
 	soap_serializeheader(pSoap);
 
@@ -313,13 +365,25 @@ int SendResolve(int socket)
 	soap_envelope_end_out(pSoap);
 	soap_destroy(pSoap);
 	soap_end(pSoap);
-	
 	soap_free(pSoap);
+	
+   free(pAction);
+   free(pMessageID);
+   free(pTo);
+	free(pEndpointAddress);
+	free(pTypes);
+	free(pItem);
+	free(pMatchBy);
+	   			
+	
+	// Chapter 3.1.3
+	// Before sending somemessage types. Target ServiceMust wait for a timer to elapse before sending the message.
+	// This timer MUST be set to a random value between 0 and APP_MAX_DELAY	
+	usleep( (random()%APP_MAX_DELAY) ); 
 	
 	char *pBuffer = getXmlBufferData();
 	int vBufLen = strlen(pBuffer);	
 	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
-	
 	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)&gMSockAddr, sizeof(gMSockAddr)) < 0)
 	{
 		perror("Sending datagram message error");
@@ -423,6 +487,11 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSender
 	free(pXAddrs);
 	free(pMatchBy);
 		
+	// Chapter 3.1.3
+	// Before sending somemessage types. Target ServiceMust wait for a timer to elapse before sending the message.
+	// This timer MUST be set to a random value between 0 and APP_MAX_DELAY		
+	usleep( (random()%APP_MAX_DELAY) ); 
+	
 	char *pBuffer = getXmlBufferData();
 	int vBufLen = strlen(pBuffer);		
 	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
@@ -517,7 +586,11 @@ int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSend
 	free(pXAddrs);
 	free(pMatchBy);
 	
-	   		
+	// Chapter 3.1.3
+	// Before sending somemessage types. Target ServiceMust wait for a timer to elapse before sending the message.
+	// This timer MUST be set to a random value between 0 and APP_MAX_DELAY	
+	usleep( (random()%APP_MAX_DELAY) ); 
+	  		
 	char *pBuffer = getXmlBufferData();
 	int vBufLen = strlen(pBuffer);		
 	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
@@ -537,31 +610,48 @@ int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSend
 int SendFault(int socket, struct sockaddr_in *pSockAddr_In)
 {
 	int vErr = 0;
-	struct SOAP_ENV__Fault *pFault = MyMalloc(sizeof(struct SOAP_ENV__Fault));
+	struct SOAP_ENV__Fault *pFault = NULL;
 	struct soap *pSoap=NULL;
-
-	pSoap = soap_new1(SOAP_IO_UDP);
+	char *pAction=NULL, *pMessageID=NULL, *pTo=NULL;
+	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pXAddrs=NULL, *pMatchBy=NULL;
+				
+	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
+		return 0;
+		
+	pAction = CopyString("http://schemas.xmlsoap.org/ws/2005/04/discovery/fault");
+	pMessageID = nativeGetMessageId();
+	pTo = nativeGetTo();
+   pEndpointAddress = nativeGetEndpointAddress();
+   pTypes = nativeGetTypes();
+   pItem = nativeGetScopesItem();
+   pXAddrs = nativeGetXAddrs(inet_ntoa(pSockAddr_In->sin_addr));
+   pMatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
+	
+	pSoap = soap_new1(SOAP_IO_UDP);	
 	pSoap->fsend = mysend;
 
 	// Build SOAP Header
 	soap_header(pSoap);
-	pSoap->header->wsa5__Action = CopyString("http://schemas.xmlsoap.org/ws/2005/04/discovery/fault");
-	pSoap->header->wsa5__MessageID = nativeGetMessageId();
-	pSoap->header->wsa5__To = nativeGetTo();
+	pSoap->header->wsa5__Action = MySoapCopyString(pSoap, pAction);
+	pSoap->header->wsa5__MessageID = MySoapCopyString(pSoap, pMessageID);
+	pSoap->header->wsa5__To = MySoapCopyString(pSoap, "http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous");
 	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) soap_malloc(pSoap,sizeof(struct wsdd__AppSequenceType));
+	soap_default_wsdd__AppSequenceType(pSoap, pSoap->header->wsdd__AppSequence);
 	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
 	pSoap->header->wsdd__AppSequence->MessageNumber = nativeGetMessageNumber();
 	pSoap->header->wsdd__AppSequence->SequenceId = NULL;
-
+	
+	
 	// Build Fault Message
-	pFault->SOAP_ENV__Code = (struct SOAP_ENV__Code*)MyMalloc(sizeof(struct SOAP_ENV__Code));
-	pFault->SOAP_ENV__Code->SOAP_ENV__Value = CopyString("SOAP-ENV:Sender");
-	pFault->SOAP_ENV__Code->SOAP_ENV__Subcode = (struct SOAP_ENV__Code*)MyMalloc(sizeof(struct SOAP_ENV__Code));
-	pFault->SOAP_ENV__Code->SOAP_ENV__Subcode->SOAP_ENV__Value = CopyString("d:MatchingRuleNotSupported");
+	pFault = (struct SOAP_ENV__Fault*)soap_malloc(pSoap,sizeof(struct SOAP_ENV__Fault));
+	pFault->SOAP_ENV__Code = (struct SOAP_ENV__Code*)soap_malloc(pSoap,sizeof(struct SOAP_ENV__Code));
+	pFault->SOAP_ENV__Code->SOAP_ENV__Value = MySoapCopyString(pSoap, "SOAP-ENV:Sender");
+	pFault->SOAP_ENV__Code->SOAP_ENV__Subcode = (struct SOAP_ENV__Code*)soap_malloc(pSoap,sizeof(struct SOAP_ENV__Code));
+	pFault->SOAP_ENV__Code->SOAP_ENV__Subcode->SOAP_ENV__Value = MySoapCopyString(pSoap, "d:MatchingRuleNotSupported");
 	pFault->SOAP_ENV__Code->SOAP_ENV__Subcode->SOAP_ENV__Subcode = NULL;
 	
-	pFault->SOAP_ENV__Reason = (struct SOAP_ENV__Reason*)MyMalloc(sizeof(struct SOAP_ENV__Reason));
-	pFault->SOAP_ENV__Reason->SOAP_ENV__Text = CopyString("the matching rule specified is not supported");
+	pFault->SOAP_ENV__Reason = (struct SOAP_ENV__Reason*)soap_malloc(pSoap,sizeof(struct SOAP_ENV__Reason));
+	pFault->SOAP_ENV__Reason->SOAP_ENV__Text = MySoapCopyString(pSoap, "the matching rule specified is not supported");
 	
 	soap_serializeheader(pSoap);
 
@@ -569,16 +659,28 @@ int SendFault(int socket, struct sockaddr_in *pSockAddr_In)
 	soap_envelope_begin_out(pSoap);
 	soap_putheader(pSoap);
 	soap_body_begin_out(pSoap);
-	
 	vErr = soap_put_SOAP_ENV__Fault(pSoap, pFault, "SOAP-ENV:Fault", "SOAP-ENV:Fault");
-	
 	soap_body_end_out(pSoap);
 	soap_envelope_end_out(pSoap);
 	soap_end_send(pSoap);
 	soap_destroy(pSoap);
 	soap_end(pSoap);
    soap_free(pSoap);
-   		
+
+   free(pAction);
+   free(pMessageID);
+   free(pTo);
+	free(pEndpointAddress);
+	free(pTypes);
+	free(pItem);
+	free(pXAddrs);
+	free(pMatchBy);
+	   	
+	// Chapter 3.1.3
+	// Before sending somemessage types. Target ServiceMust wait for a timer to elapse before sending the message.
+	// This timer MUST be set to a random value between 0 and APP_MAX_DELAY   		
+   usleep( (random()%APP_MAX_DELAY) ); 
+   
 	char *pBuffer = getXmlBufferData();
 	int vBufLen = strlen(pBuffer);		
 	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
@@ -605,7 +707,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 		DBG("%s %s :%d NONDISCOVERABLE\n",__FILE__,__func__, __LINE__);
 		return SOAP_OK;
 	}
-			
+		
 #if 0	
 	DBG("\n======\n");
 	DBG("vLen=%zd, buf=\n%s\n", pSoap->buflen,pSoap->buf);
@@ -618,6 +720,9 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 	}
 	DBG(, "======\n\n");
 #endif	
+
+   // The ipaddress may changed
+   initMyIpString();
 
 	if(wsdd__Probe->Scopes)
 	{
@@ -673,13 +778,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 	
 	// Test only
 	//bScopeValid = 1;
-	
-	
-	// Chapter 3.1.3
-	// Before sending somemessage types. Target ServiceMust wait for a timer to elapse before sending the message.
-	// This timer MUST be set to a random value between 0 and APP_MAX_DELAY
-	usleep( (random()%APP_MAX_DELAY) );
-	// sleep(1);
+
 	
 	// For IPv4 only
 	vSocket = CreateUnicastClient(&pSoap->peer);
@@ -691,22 +790,10 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 			if(pSoap->header->wsa5__MessageID)
 			{
 			   pSenderMessageId = pSoap->header->wsa5__MessageID;
-			   #if 0
-				int vLen=0;
-				vLen = strlen(pSoap->header->wsa5__MessageID);
-				pSenderMessageId = MyMalloc(vLen+10);
-				sprintf(pSenderMessageId, "%s",pSoap->header->wsa5__MessageID);
-				#endif
 			}
       }
-      DBG("%s %s :%d\n",__FILE__,__func__, __LINE__);
 		SendProbeMatches(vSocket, &pSoap->peer, pSenderMessageId);
-		usleep(500000);
-		DBG("%s %s :%d\n",__FILE__,__func__, __LINE__);
 		SendProbeMatches(vSocket, &pSoap->peer, pSenderMessageId);
-		
-		//if(pSenderMessageId)
-		//	free(pSenderMessageId);
 	}
 	else
 	{
