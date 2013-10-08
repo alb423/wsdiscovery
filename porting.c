@@ -24,7 +24,7 @@ int nativeGetMessageNumber()
 
 char *nativeGetXAddrs(char *pAddrToResponse)
 {
-	int i = 0;
+	int i = 0, j = 0, vLen = 0, vSuffix = 0;
 	char pTmp[1024] = {0};
 	char *pAddrToSend = NULL;
 	
@@ -32,7 +32,15 @@ char *nativeGetXAddrs(char *pAddrToResponse)
 	for(i=0; i<NET_MAX_INTERFACE; i++)
 	{
 		pAddrToSend = gpLocalAddr[i];
-		if(strncmp(pAddrToSend, pAddrToResponse, strlen(pAddrToSend)-3)==0)
+		vLen = strlen(pAddrToSend);
+		for(j=vLen-1;j>=0;j--)
+		{
+			if(pAddrToSend[j]=='.')
+				break;
+			vSuffix++;
+		}
+		
+		if(strncmp(pAddrToSend, pAddrToResponse, vLen-vSuffix)==0)
 			break;
 	}
 
@@ -45,7 +53,7 @@ char *nativeGetXAddrs(char *pAddrToResponse)
 char *nativeGetEndpointAddress()
 {
 	char pTmp[1024]={0};
-	
+	char *pAddr = NULL;
 	// It is RECOMMENDED that the balue of this element be a stable globally-unique identifier (GUID) base URN[RFC 4122]
 	// If the value of this element is not a network-resolvable transport address, 
 	// such tansport address(es) are converyed in a separate d:XAddrs element
@@ -53,8 +61,9 @@ char *nativeGetEndpointAddress()
 	// "urn:uuid:98190dc2-0890-4ef8-ac9a-5940995e6119" is a example of wsdd-discovery-1.1-spec-cs-01.pdf
 	
 	//sprintf(pTmp, "urn:uuid:00075f74-9ef6-f69e-745f-%s", getMyMacAddress());
-	sprintf(pTmp, "urn:uuid:98190dc2-0890-4ef8-ac9a-%s", getMyMacAddress());	
-	
+	pAddr = getMyMacAddress();
+	sprintf(pTmp, "urn:uuid:98190dc2-0890-4ef8-ac9a-%s", pAddr);	
+	free(pAddr);
 	return CopyString(pTmp);
 }
 
@@ -119,19 +128,19 @@ void nativeIncreaseMetadataVersion()
 
 int nativeGetDiscoveryMode()
 {
-	return _gDiscoveryMode;
+   return _gDiscoveryMode;
 }
 
 void nativeChangeDiscoveryMode(char Mode)
 {
-	if(Mode=='0')
-	{
-		printf("NONDISCOVERABLE !! \n");
-		_gDiscoveryMode = NONDISCOVERABLE;
-	}
-	else
-	{
-			printf("DISCOVERABLE !! \n");
-		_gDiscoveryMode = DISCOVERABLE;
-	}
+   if(Mode=='0')
+   {
+      printf("NONDISCOVERABLE !! \n");
+      _gDiscoveryMode = NONDISCOVERABLE;
+   }
+   else
+   {
+      printf("DISCOVERABLE !! \n");
+      _gDiscoveryMode = DISCOVERABLE;
+   }
 }

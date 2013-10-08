@@ -28,9 +28,6 @@
 extern struct sockaddr_in gMSockAddr;
 extern char gpLocalAddr[NET_MAX_INTERFACE][32];
 
-extern char * getMyIpString(char *pInterfaceName);
-extern char * initMyIpString(void);
-extern char * getMyMacAddress(void);
 extern int CreateMulticastClient(char *pAddress, int port);
 extern int CreateMulticastServer(void);
 extern int CreateUnicastClient(struct sockaddr_in *pSockAddr);
@@ -40,9 +37,15 @@ extern void clearXmlBuffer(void);
 extern int mysend(struct soap *soap, const char *s, size_t n);
 extern char* getXmlBufferData(void);
 
-
 extern void * MyMalloc(int vSize);
+extern void MyFree(void *ptr);
+extern char * MySoapCopyString(struct soap *pSoap, char *pSrc);
+
 extern char * CopyString(char *pSrc);
+extern char * getMyIpString(char *pInterfaceName);
+extern char * initMyIpString(void);
+extern char * getMyMacAddress(void);
+
 
 
 extern int match_rfc3986(char *pItem);

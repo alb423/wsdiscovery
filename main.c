@@ -48,115 +48,118 @@ int _server(int argc, char **argv);
 
 int main(int argc, char **argv)
 {
-	int vLen = 0, vExecutableLen = 0;
-		
-	// busybox
-	vLen = strlen("ws-client");
-	vExecutableLen = strlen(argv[0]);
-	if(vLen <= vExecutableLen )
-	{
-		// If the executable name is ws-client
-		if(strcmp(&argv[0][vExecutableLen-vLen],"ws-client")==0)
-		{
-			return _client(argc, argv);
-		}
-		else
-		{
-			return _server(argc, argv);
-		}		
-	}
-	return 1;
+   int vLen = 0, vExecutableLen = 0;
+   
+   // busybox
+   vLen = strlen("ws-client");
+   vExecutableLen = strlen(argv[0]);
+   if(vLen <= vExecutableLen )
+   {
+      // If the executable name is ws-client
+      if(strcmp(&argv[0][vExecutableLen-vLen],"ws-client")==0)
+      {
+         return _client(argc, argv);
+      }
+      else
+      {
+         return _server(argc, argv);
+      }		
+   }
+   return 1;
 }
 
 int _server(int argc, char **argv)
 {
-	int msocket_cli = 0, msocket_cli2 = 0, msocket_srv = 0, msocket_srv2 = 0;	
-	char *pAddress=NULL, *pAddressWifi=NULL;
-	struct soap* pSoap = NULL;
+   int msocket_cli = 0, msocket_cli2 = 0, msocket_srv = 0, msocket_srv2 = 0;	
+   char *pAddress=NULL, *pAddressWifi=NULL;
+   struct soap* pSoap = NULL;
+   
+   initMyIpString();
+   
+   // For MAC only
+   pAddress = getMyIpString(INTERFACE_NAME_1);
+   pAddressWifi = getMyIpString(INTERFACE_NAME_2);
+   
+   InitMyRandom(pAddress);	
+   
+   if(pAddress)
+   {
+      msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
+   }
+   if(pAddressWifi)
+   {		
+      msocket_cli2 = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
+   }	
+   free(pAddress);
+   free(pAddressWifi);
+   
+   msocket_srv = CreateMulticastServer();
+   pSoap = soap_new1(SOAP_IO_UDP);
+   
+   // send 3 times to avoid packet loss 
+   usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli); 
+   usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli2); 
+   usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli); 
+   usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli2);
+   usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli); 
+   usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli2);	 	
 
-  initMyIpString();
-	
-	// For MAC only
-	pAddress = getMyIpString(INTERFACE_NAME_1);
-	pAddressWifi = getMyIpString(INTERFACE_NAME_2);
-	//pAddress = getMyIpString("eth0");
-	//pAddressWifi = getMyIpString("eth1");
-		
-	InitMyRandom(pAddress);
-	
-		
-	if(pAddress)
-	{
-		msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
-	}
-	if(pAddressWifi)
-	{		
-		msocket_cli2 = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
-	}
-	
-
-			
-	msocket_srv = CreateMulticastServer();
-	pSoap = MyMalloc(sizeof(struct soap));
-	soap_init1(pSoap, SOAP_IO_UDP);
-			
-	//pSoap->sendfd = msocket_cli;
-	//pSoap->recvfd = msocket_srv;
-	pSoap->recvsk = msocket_srv;
-
-	// send 3 times to avoid packet loss
-	usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli); 
-	usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli2); 
-	usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli); 
-	usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli2);
-	usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli); 
-	usleep( (random()%APP_MAX_DELAY) ); SendHello(msocket_cli2);	 	
-		
-	thread_ret=pthread_create( &tptr[thread_no].thread_tid, NULL, (void *) RecvThread, (void*)thread_no );
-	if(thread_ret!=0)
-	{
-		fprintf (stderr, "Create pthread error!\n");
-		exit (1);
-	}
-	thread_no++;
-         			
-	while(1)
-	{
-		soap_serve(pSoap);
-		fprintf(stderr, "%s %s :%d peer addr=%s, port=%d, error=%d\n",__FILE__,__func__, __LINE__, inet_ntoa(pSoap->peer.sin_addr), pSoap->peer.sin_port,  pSoap->error);	
-		if(pSoap->header)
-		{
-			fprintf(stderr, "%s %s :%d Action = %s\n",__FILE__,__func__, __LINE__, pSoap->header->wsa5__Action);
-			if(strstr(pSoap->header->wsa5__Action,"fault")!=NULL)
-			{
-				// exit the loop when receive fault
-				break;
-			}
-		}
-	}
-
-	close(msocket_srv);
-	return 1;
+   thread_ret=pthread_create( &tptr[thread_no].thread_tid, NULL, (void *) RecvThread, (void*)thread_no );
+   if(thread_ret!=0)
+   {
+      fprintf (stderr, "Create pthread error!\n");
+      exit (1);
+   }
+   thread_no++;
+   	
+   while(1)
+   {
+      //pSoap->sendfd = msocket_cli;
+      //pSoap->recvfd = msocket_srv;
+      pSoap->recvsk = msocket_srv;
+            
+      soap_serve(pSoap);
+      fprintf(stderr, "%s %s :%d peer addr=%s, port=%d, error=%d\n",__FILE__,__func__, __LINE__, inet_ntoa(pSoap->peer.sin_addr), pSoap->peer.sin_port,  pSoap->error);	
+      if(pSoap->header)
+      {
+         fprintf(stderr, "%s %s :%d Action = %s\n",__FILE__,__func__, __LINE__, pSoap->header->wsa5__Action);
+         if(strstr(pSoap->header->wsa5__Action,"fault")!=NULL)
+         {
+            // exit the loop when receive fault
+            break;
+         }
+      }
+      soap_destroy(pSoap);
+      soap_end(pSoap);
+   }
+   
+   soap_done(pSoap);
+   soap_free(pSoap);
+   close(msocket_srv);
+   return 1;
 }
 
 int _client(int argc, char **argv)
 {
-	int vLen = 0, vExecutableLen = 0;
-	int msocket_cli = 0, msocket_cli2= 0;
-	char *pAddress=NULL, *pAddressWifi=NULL;
-	int vDataLen = 1024*5;
-	char pDataBuf[1024*5];
-	
-	initMyIpString();
-	
-	pAddress = getMyIpString(INTERFACE_NAME_1);
-	pAddressWifi = getMyIpString(INTERFACE_NAME_2);
-	
-	if(pAddress)
-		msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
-	if(pAddressWifi)
-		msocket_cli2 = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
-	
+   int vLen = 0, vExecutableLen = 0;
+   int msocket_cli = 0, msocket_cli2= 0;
+   char *pAddress=NULL, *pAddressWifi=NULL;
+   int vDataLen = 1024*5;
+   char pDataBuf[1024*5];
+   
+   initMyIpString();
+   
+   pAddress = getMyIpString(INTERFACE_NAME_1);
+   pAddressWifi = getMyIpString(INTERFACE_NAME_2);
+   
+   if(pAddress)
+      msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
+   if(pAddressWifi)
+      msocket_cli2 = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
+      
+   free(pAddress);
+   free(pAddressWifi);
+  	
 	usleep(500000);
 	if(argc>=2)
 	{
@@ -248,110 +251,113 @@ int _client(int argc, char **argv)
 
 void RecvThread(void* data)
 {
-	int i;
-	int msqid;
-	int msocket_cli = 0, msocket_cli2 = 0;
-	char *pAddress=NULL, *pAddressWifi=NULL;    
-	pthread_detach(pthread_self());
-    
-  pAddress = getMyIpString(INTERFACE_NAME_1);
-  pAddressWifi = getMyIpString(INTERFACE_NAME_2);
-  if(pAddress)
-		msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
-  if(pAddressWifi)
-		msocket_cli = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
-			    
-  DBG("RecvThread start....\n");
-	if((msqid = msgget(ONVIF_DIS_MSG_KEY, PERMS | IPC_CREAT)) >= 0)
-	{
-		native_msg_buf  recvmsg ;
-		while(1)
-		{                    
-			DBG("start recv msg .. \n");
-			if(msgrcv(msqid, &recvmsg, 4, 0, 0) > 0)
-			{
-				if(recvmsg.mtype == ONVIF_MSG_UPDATE_SCOPES)
-				{
-					nativeIncreaseMetadataVersion();
-					SendHello(msocket_cli);
-					SendHello(msocket_cli);
-					SendHello(msocket_cli);
-				} 
-				else if(recvmsg.mtype == ONVIF_MSG_REBOOT)
-				{
-					for (i=0;i<2;i++)
-					{
-						sleep(2);
-						SendBye(msocket_cli);
-						SendBye(msocket_cli);
-						SendBye(msocket_cli);
-					}
-				} 
-				else if(recvmsg.mtype == ONVIF_MSG_DISCOVERYMODE)
-				{
-					//initDiscoveryMode();
-					DBG("recvmsg.mtext[0]=%c\n",recvmsg.mtext[0]);
-					nativeChangeDiscoveryMode(recvmsg.mtext[0]);
-					SendHello(msocket_cli);
-				}
-				usleep(50);
-			}
-			sleep(1);
-		}
-		
-		if(msgctl(msqid, IPC_RMID, (struct msqid_ds *) 0) < 0)
-		{
-			DBG("msg queue remove error !! \n");
-		}
-	}       
+   int i;
+   int msqid;
+   int msocket_cli = 0, msocket_cli2 = 0;
+   char *pAddress=NULL, *pAddressWifi=NULL;    
+   pthread_detach(pthread_self());
+   
+   pAddress = getMyIpString(INTERFACE_NAME_1);
+   pAddressWifi = getMyIpString(INTERFACE_NAME_2);
+   
+   if(pAddress)
+      msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
+   if(pAddressWifi)
+      msocket_cli = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
+      
+   free(pAddress);
+   free(pAddressWifi);
+  			    
+   DBG("RecvThread start....\n");
+   if((msqid = msgget(ONVIF_DIS_MSG_KEY, PERMS | IPC_CREAT)) >= 0)
+   {
+      native_msg_buf  recvmsg ;
+      while(1)
+      {                    
+         DBG("start recv msg .. \n");
+         if(msgrcv(msqid, &recvmsg, 4, 0, 0) > 0)
+         {
+            if(recvmsg.mtype == ONVIF_MSG_UPDATE_SCOPES)
+            {
+               nativeIncreaseMetadataVersion();
+               SendHello(msocket_cli);
+               SendHello(msocket_cli);
+               SendHello(msocket_cli);
+            } 
+            else if(recvmsg.mtype == ONVIF_MSG_REBOOT)
+            {
+               for (i=0;i<2;i++)
+               {
+                  sleep(2);
+                  SendBye(msocket_cli);
+                  SendBye(msocket_cli);
+                  SendBye(msocket_cli);
+               }
+            } 
+            else if(recvmsg.mtype == ONVIF_MSG_DISCOVERYMODE)
+            {
+               //initDiscoveryMode();
+               DBG("recvmsg.mtext[0]=%c\n",recvmsg.mtext[0]);
+               nativeChangeDiscoveryMode(recvmsg.mtext[0]);
+               SendHello(msocket_cli);
+            }
+            usleep(50);
+         }
+         sleep(1);
+      }
+      
+      if(msgctl(msqid, IPC_RMID, (struct msqid_ds *) 0) < 0)
+      {
+         DBG("msg queue remove error !! \n");
+      }
+   }       
   
-  close(msocket_cli);
-  DBG("RecvThread end....\n");
-  pthread_exit ("thread all done");
-  
+   close(msocket_cli);
+   DBG("RecvThread end....\n");
+   pthread_exit ("thread all done");
 }
 
 void send_msg_update_scopes()
 {
-	int msqid;
-  if((msqid = msgget(ONVIF_DIS_MSG_KEY, PERMS | IPC_CREAT)) >= 0)
-  {
-  	native_msg_buf  sendmsg ;
-  	sendmsg.mtype = ONVIF_MSG_UPDATE_SCOPES;
-  	if(msgsnd(msqid, &sendmsg, 1, 0) < 0)
-  	{
-  		perror("msgsnd() error!!\n");
-  	}
-  }
+   int msqid;
+   if((msqid = msgget(ONVIF_DIS_MSG_KEY, PERMS | IPC_CREAT)) >= 0)
+   {
+      native_msg_buf  sendmsg ;
+      sendmsg.mtype = ONVIF_MSG_UPDATE_SCOPES;
+      if(msgsnd(msqid, &sendmsg, 1, 0) < 0)
+      {
+         perror("msgsnd() error!!\n");
+      }
+   }
 }
 
 void send_msg_reboot()
 {
-	int msqid;
-  if((msqid = msgget(ONVIF_DIS_MSG_KEY, PERMS | IPC_CREAT)) >= 0)
-  {
-  	native_msg_buf  sendmsg ;
-  	sendmsg.mtype = ONVIF_MSG_REBOOT;
-  	if(msgsnd(msqid, &sendmsg, 1, 0) < 0)
-  	{
-  		perror("msgsnd() error!!\n");
-  	}
-  }
+   int msqid;
+   if((msqid = msgget(ONVIF_DIS_MSG_KEY, PERMS | IPC_CREAT)) >= 0)
+   {
+      native_msg_buf  sendmsg ;
+      sendmsg.mtype = ONVIF_MSG_REBOOT;
+      if(msgsnd(msqid, &sendmsg, 1, 0) < 0)
+      {
+         perror("msgsnd() error!!\n");
+      }
+   }
 }
 
   
 void send_msg_discoverymode(char vMode)
 {
-	int msqid;
-  if((msqid = msgget(ONVIF_DIS_MSG_KEY, PERMS | IPC_CREAT)) >= 0)
-  {
-  	native_msg_buf  sendmsg ;
-  	sendmsg.mtype = ONVIF_MSG_DISCOVERYMODE;
-  	sendmsg.mtext[0] = vMode;
-  	DBG("\n send_msg_discoverymode() vMode = %c \n\n", vMode);
-  	if(msgsnd(msqid, &sendmsg, 1, 0) < 0)
-  	{
-  		perror("msgsnd() error!!\n");
-  	}
-  }
+   int msqid;
+   if((msqid = msgget(ONVIF_DIS_MSG_KEY, PERMS | IPC_CREAT)) >= 0)
+   {
+      native_msg_buf  sendmsg ;
+      sendmsg.mtype = ONVIF_MSG_DISCOVERYMODE;
+      sendmsg.mtext[0] = vMode;
+      DBG("\n send_msg_discoverymode() vMode = %c \n\n", vMode);
+      if(msgsnd(msqid, &sendmsg, 1, 0) < 0)
+      {
+         perror("msgsnd() error!!\n");
+      }
+   }
 }
