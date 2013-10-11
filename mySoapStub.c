@@ -50,7 +50,6 @@ int SendHello(int socket, char *pXAddrs)
 	pSoap->header->wsa5__MessageID = MySoapCopyString(pSoap, pMessageID);
 	pSoap->header->wsa5__To = MySoapCopyString(pSoap, pTo);
 	
-	// This part cause segmentation fault, because align at 4-, 8- or 16-byte boundary
 	pSoap->header->wsdd__AppSequence = (struct wsdd__AppSequenceType *) soap_malloc(pSoap,sizeof(struct wsdd__AppSequenceType));
 	soap_default_wsdd__AppSequenceType(pSoap, pSoap->header->wsdd__AppSequence);
 	pSoap->header->wsdd__AppSequence->InstanceId = nativeGetInstanceId();
@@ -655,6 +654,16 @@ int SendFault(int socket, struct sockaddr_in *pSockAddr_In)
 	pFault->SOAP_ENV__Reason = (struct SOAP_ENV__Reason*)soap_malloc(pSoap,sizeof(struct SOAP_ENV__Reason));
 	pFault->SOAP_ENV__Reason->SOAP_ENV__Text = MySoapCopyString(pSoap, "the matching rule specified is not supported");
 	
+	pFault->SOAP_ENV__Detail = (struct SOAP_ENV__Detail*)soap_malloc(pSoap,sizeof(struct SOAP_ENV__Detail));
+	int vLen = 0;
+	char *pTmp = NULL;
+	vLen = strlen(pItem);
+	pTmp = soap_malloc(pSoap, vLen + 100);
+	memset(pTmp, 0, vLen+100);
+	sprintf(pTmp, "<d:SupportedMatchingRules>%s</d:SupportedMatchingRules>", pItem);
+	
+	pFault->SOAP_ENV__Detail->__any = MySoapCopyString(pSoap, pTmp);
+		
 	soap_serializeheader(pSoap);
 
 	soap_response(pSoap, SOAP_FAULT);
@@ -686,14 +695,14 @@ int SendFault(int socket, struct sockaddr_in *pSockAddr_In)
 	char *pBuffer = getXmlBufferData();
 	int vBufLen = strlen(pBuffer);		
 	DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
-	
+
 	if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)pSockAddr_In, sizeof(*pSockAddr_In)) < 0)
 	{
 		perror("Sending datagram message error");
 	}
 	else
 	  DBG("Sending datagram message...OK\n");	
-	  
+  
 	clearXmlBuffer();	  
 	return SOAP_OK;
 }
@@ -709,19 +718,6 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 		DBG("%s %s :%d NONDISCOVERABLE\n",__FILE__,__func__, __LINE__);
 		return SOAP_OK;
 	}
-		
-#if 0	
-	DBG("\n======\n");
-	DBG("vLen=%zd, buf=\n%s\n", pSoap->buflen,pSoap->buf);
-	if(wsdd__Probe->Types)
-		DBG("Types=%s\n",wsdd__Probe->Types);	
-	if(wsdd__Probe->Scopes)
-	{
-		DBG("Scopes->__item=%s\n",wsdd__Probe->Scopes->__item);	
-		DBG("Scopes->MatchBy=%s\n",wsdd__Probe->Scopes->MatchBy);	
-	}
-	DBG(, "======\n\n");
-#endif	
 
    // The ipaddress may changed
    initMyIpString();
