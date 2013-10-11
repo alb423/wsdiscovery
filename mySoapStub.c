@@ -18,7 +18,7 @@
 #include "porting.h"
 #include "wsdd.nsmap" //  SOAP_NMAC struct Namespace namespaces[]
 // Send Multicast Packet (Hello and Bye)
-int SendHello(int socket, char *pXAddrs)
+int SendHello(int socket, char *pXAddrsIn)
 {
 	int vErr = 0;
 	struct __wsdd__Hello *pWsdd__Hello = NULL;
@@ -26,7 +26,7 @@ int SendHello(int socket, char *pXAddrs)
 	struct soap *pSoap = NULL;
 	
 	char *pAction=NULL, *pMessageID=NULL, *pTo=NULL;
-	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pMatchBy=NULL;
+	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pXAddrs=NULL, *pMatchBy=NULL;
 	
 	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
 		return 0;
@@ -39,6 +39,7 @@ int SendHello(int socket, char *pXAddrs)
    pEndpointAddress = nativeGetEndpointAddress();
    pTypes = nativeGetTypes();
    pItem = nativeGetScopesItem();
+   pXAddrs = nativeGetXAddrs(pXAddrsIn);
    pMatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
    	
 	pSoap = soap_new1(SOAP_IO_UDP);		
@@ -94,6 +95,7 @@ int SendHello(int socket, char *pXAddrs)
 	free(pEndpointAddress);
 	free(pTypes);
 	free(pItem);
+   free(pXAddrs);
 	free(pMatchBy);
 
 	// Chapter 3.1.3
@@ -110,14 +112,14 @@ int SendHello(int socket, char *pXAddrs)
 		perror("Sending datagram message error");
 	}
 	else
-	  DBG("Sending datagram message...OK\n");		
+	  DBG("Sending SendHello message...OK\n");		
 	  
 	clearXmlBuffer();
 	  
 	return SOAP_OK;
 }
 
-int SendBye(int socket, char *pXAddrs)
+int SendBye(int socket, char *pXAddrsIn)
 {
 	int vErr = 0;
 	struct __wsdd__Bye *pWsdd__Bye = NULL;
@@ -125,7 +127,7 @@ int SendBye(int socket, char *pXAddrs)
 	struct soap *pSoap = NULL;
 
    char *pAction=NULL, *pMessageID=NULL, *pTo=NULL;
-	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pMatchBy=NULL;
+	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pXAddrs=NULL, *pMatchBy=NULL;
 	
 	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
 		return 0;
@@ -138,6 +140,7 @@ int SendBye(int socket, char *pXAddrs)
    pEndpointAddress = nativeGetEndpointAddress();
    pTypes = nativeGetTypes();
    pItem = nativeGetScopesItem();
+   pXAddrs = nativeGetXAddrs(pXAddrsIn);
    pMatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
    		
 	pSoap = soap_new1(SOAP_IO_UDP);		
@@ -193,6 +196,7 @@ int SendBye(int socket, char *pXAddrs)
 	free(pEndpointAddress);
 	free(pTypes);
 	free(pItem);
+   free(pXAddrs);
 	free(pMatchBy);
 
 	// Chapter 3.1.3
@@ -209,7 +213,7 @@ int SendBye(int socket, char *pXAddrs)
 		perror("Sending datagram message error");
 	}
 	else
-	  DBG("Sending datagram message...OK\n");	
+	  DBG("Sending SendBye message...OK\n");	
 
 	clearXmlBuffer();	  	
 		  
@@ -309,7 +313,7 @@ int SendProbe(int socket)
 		perror("Sending datagram message error");
 	}
 	else
-	  DBG("Sending datagram message...OK\n");	
+	  DBG("Sending SendProbe message...OK\n");	
 	  
 	clearXmlBuffer();	  
 	return SOAP_OK;
@@ -388,7 +392,7 @@ int SendResolve(int socket)
 		perror("Sending datagram message error");
 	}
 	else
-	  DBG("Sending datagram message...OK\n");	
+	  DBG("Sending SendResolve message...OK\n");	
 	  
 	clearXmlBuffer();
 	  
@@ -501,7 +505,7 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSender
 		perror("Sending datagram message error");
 	}
 	else
-	  DBG("Sending datagram message...OK\n");	
+	  DBG("Sending SendProbeMatches message...OK\n");	
 	  
 	clearXmlBuffer();
 	  
@@ -601,7 +605,7 @@ int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSend
 		perror("Sending datagram message error");
 	}
 	else
-	  DBG("Sending datagram message...OK\n");	
+	  DBG("Sending SendResolveMatches message...OK\n");	
 	  
 	clearXmlBuffer();
 	  
@@ -655,15 +659,16 @@ int SendFault(int socket, struct sockaddr_in *pSockAddr_In)
 	pFault->SOAP_ENV__Reason->SOAP_ENV__Text = MySoapCopyString(pSoap, "the matching rule specified is not supported");
 	
 	pFault->SOAP_ENV__Detail = (struct SOAP_ENV__Detail*)soap_malloc(pSoap,sizeof(struct SOAP_ENV__Detail));
-	int vLen = 0;
-	char *pTmp = NULL;
-	vLen = strlen(pItem);
-	pTmp = soap_malloc(pSoap, vLen + 100);
-	memset(pTmp, 0, vLen+100);
-	sprintf(pTmp, "<d:SupportedMatchingRules>%s</d:SupportedMatchingRules>", pItem);
-	
-	pFault->SOAP_ENV__Detail->__any = MySoapCopyString(pSoap, pTmp);
-		
+        {
+   	   int vLen = 0;
+	   char *pTmp = NULL;
+	   vLen = strlen(pItem);
+	   pTmp = soap_malloc(pSoap, vLen + 100);
+	   memset(pTmp, 0, vLen+100);
+	   sprintf(pTmp, "<d:SupportedMatchingRules>%s</d:SupportedMatchingRules>", pItem);	
+	   pFault->SOAP_ENV__Detail->__any = MySoapCopyString(pSoap, pTmp);
+	   free(pTmpe);
+        }	
 	soap_serializeheader(pSoap);
 
 	soap_response(pSoap, SOAP_FAULT);
@@ -701,7 +706,7 @@ int SendFault(int socket, struct sockaddr_in *pSockAddr_In)
 		perror("Sending datagram message error");
 	}
 	else
-	  DBG("Sending datagram message...OK\n");	
+	  DBG("Sending SendFault message...OK\n");	
   
 	clearXmlBuffer();	  
 	return SOAP_OK;
@@ -751,9 +756,22 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 			}
 			else
 			{
-				// If there is no MatchBy in Scope Tag
-				// The default match is http://schemas.xmlsoap.org/ws/2005/04/discovery/rfc3986
-				bScopeValid = match_rfc3986(wsdd__Probe->Scopes->__item);	
+               // For Multicast probe
+               // If there is no MatchBy in Scope Tag
+               // The default match is http://schemas.xmlsoap.org/ws/2005/04/discovery/rfc3986
+               bScopeValid = match_rfc3986(scopesArray[j]);	
+               
+               // For Unicast probe, a Fault should be returned
+               /*
+                  [action] http://schemas.xmlsoap.org/ws/2005/04/discovery/fault
+                  [Code] s12:Sender
+                  [Subcode] d:MatchingRuleNotSupported
+                  [Reason] E.g., the matching rule specified is not supported
+                  [Detail] 
+                  <d: SupportedMatchingRules>
+                  List of xs:anyURI
+                  </d: SupportedMatchingRules>
+               */	
 			}
 		}
 	}

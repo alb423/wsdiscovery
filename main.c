@@ -82,7 +82,6 @@ int _server(int argc, char **argv)
    pAddressWifi = getMyIpString(INTERFACE_NAME_2);
    
    InitMyRandom(pAddress);	
-   
    if(pAddress)
    {
       msocket_cli = CreateMulticastClient(pAddress, MULTICAST_PORT);
@@ -91,8 +90,6 @@ int _server(int argc, char **argv)
    {		
       msocket_cli2 = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
    }	
-   free(pAddress);
-   free(pAddressWifi);
    
    msocket_srv = CreateMulticastServer();
    pSoap = soap_new1(SOAP_IO_UDP);
@@ -106,11 +103,12 @@ int _server(int argc, char **argv)
          SendHello(msocket_cli2, pAddressWifi); 
 	}
 
-	
+   free(pAddress);
+   free(pAddressWifi);
 	close(msocket_cli);
 	close(msocket_cli2);
 
-   thread_ret=pthread_create( &tptr[thread_no].thread_tid, NULL, (void *) RecvThread, (void*) &thread_no );
+   thread_ret=pthread_create( &tptr[thread_no].thread_tid, NULL, (void *) RecvThread, (void*)thread_no );
    if(thread_ret!=0)
    {
       fprintf (stderr, "Create pthread error!\n");
@@ -163,9 +161,6 @@ int _client(int argc, char **argv)
    if(pAddressWifi)
       msocket_cli2 = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
       
-   free(pAddress);
-   free(pAddressWifi);
-  	
 	usleep(500000);
 	if(argc>=2)
 	{
@@ -251,6 +246,10 @@ int _client(int argc, char **argv)
 		SendHello(msocket_cli, pAddress); 
 	}
 	close(msocket_cli);
+   
+   free(pAddress);
+   free(pAddressWifi);
+   
 	return 1;
 }
 
@@ -281,12 +280,10 @@ void RecvThread(void* data)
             if(pAddressWifi)
                msocket_cli2 = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
                
-            free(pAddress);
-            free(pAddressWifi);
-               
             if(recvmsg.mtype == ONVIF_MSG_UPDATE_SCOPES)
             {
                nativeIncreaseMetadataVersion();
+
                // send 3 times to avoid packet loss 
                for(i=0;i<3;i++)
                {
@@ -326,6 +323,8 @@ void RecvThread(void* data)
             }
             close(msocket_cli);
 	         close(msocket_cli2);
+            free(pAddress);
+            free(pAddressWifi);
             usleep(500000);
          }
          usleep(500000);

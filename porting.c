@@ -16,6 +16,7 @@ static int _gMetadataVersion = 1;
 static int _gDiscoveryMode = 0;
 static int _gInstanceId = 1;
 static int _gMessageNumber = 1;
+char *_gpScopeData=NULL;
 
 int nativeGetMessageNumber()
 {
@@ -33,6 +34,8 @@ char *nativeGetXAddrs(char *pAddrToResponse)
 	{
 		pAddrToSend = gpLocalAddr[i];
 		vLen = strlen(pAddrToSend);
+      if(vLen>0)
+      {
 		for(j=vLen-1;j>=0;j--)
 		{
 			if(pAddrToSend[j]=='.')
@@ -43,8 +46,11 @@ char *nativeGetXAddrs(char *pAddrToResponse)
 		if(strncmp(pAddrToSend, pAddrToResponse, vLen-vSuffix)==0)
 			break;
 	}
+	}
+   
+   if(strlen(pAddrToSend)==0)
+      pAddrToSend = gpLocalAddr[0];
 
-	//sprintf(pTmp, "http://%s:80/onvif/device_service", getMyIpString(INTERFACE_NAME_1));
 	sprintf(pTmp, "http://%s:80/onvif/device_service", pAddrToSend);
 	
 	return CopyString(pTmp);
@@ -94,7 +100,7 @@ char *nativeGetMessageId()
 {
 	char pTmp[128]={0}, pTmp2[128]={0};
 	UuidGen(pTmp2);
-	sprintf(pTmp, "uuid:%s", pTmp2);
+	sprintf(pTmp, "urn:uuid:%s", pTmp2);
 
 	return CopyString(pTmp);	
 }
