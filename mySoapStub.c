@@ -18,7 +18,7 @@
 #include "porting.h"
 #include "wsdd.nsmap" //  SOAP_NMAC struct Namespace namespaces[]
 // Send Multicast Packet (Hello and Bye)
-int SendHello(int socket)
+int SendHello(int socket, char *pXAddrs)
 {
 	int vErr = 0;
 	struct __wsdd__Hello *pWsdd__Hello = NULL;
@@ -26,19 +26,19 @@ int SendHello(int socket)
 	struct soap *pSoap = NULL;
 	
 	char *pAction=NULL, *pMessageID=NULL, *pTo=NULL;
-	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pXAddrs=NULL, *pMatchBy=NULL;
+	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pMatchBy=NULL;
 	
 	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
 		return 0;
 	
 	// Get evnironment variable
-	pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Hello");
+	//pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Hello");
+	pAction = CopyString("http://schemas.xmlsoap.org/ws/2005/04/discovery/Hello");
 	pMessageID = nativeGetMessageId();
 	pTo =nativeGetTo();
    pEndpointAddress = nativeGetEndpointAddress();
    pTypes = nativeGetTypes();
    pItem = nativeGetScopesItem();
-   pXAddrs = nativeGetXAddrs(inet_ntoa(gMSockAddr.sin_addr));
    pMatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
    	
 	pSoap = soap_new1(SOAP_IO_UDP);		
@@ -95,7 +95,6 @@ int SendHello(int socket)
 	free(pEndpointAddress);
 	free(pTypes);
 	free(pItem);
-	free(pXAddrs);
 	free(pMatchBy);
 
 	// Chapter 3.1.3
@@ -119,7 +118,7 @@ int SendHello(int socket)
 	return SOAP_OK;
 }
 
-int SendBye(int socket)
+int SendBye(int socket, char *pXAddrs)
 {
 	int vErr = 0;
 	struct __wsdd__Bye *pWsdd__Bye = NULL;
@@ -127,19 +126,19 @@ int SendBye(int socket)
 	struct soap *pSoap = NULL;
 
    char *pAction=NULL, *pMessageID=NULL, *pTo=NULL;
-	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pXAddrs=NULL, *pMatchBy=NULL;
+	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pMatchBy=NULL;
 	
 	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
 		return 0;
 	
 	// Get evnironment variable
-	pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Bye");
+	//pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Bye");
+	pAction = CopyString("http://schemas.xmlsoap.org/ws/2005/04/discovery/Bye");
 	pMessageID = nativeGetMessageId();
 	pTo =nativeGetTo();
    pEndpointAddress = nativeGetEndpointAddress();
    pTypes = nativeGetTypes();
    pItem = nativeGetScopesItem();
-   pXAddrs = nativeGetXAddrs(inet_ntoa(gMSockAddr.sin_addr));
    pMatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
    		
 	pSoap = soap_new1(SOAP_IO_UDP);		
@@ -195,7 +194,6 @@ int SendBye(int socket)
 	free(pEndpointAddress);
 	free(pTypes);
 	free(pItem);
-	free(pXAddrs);
 	free(pMatchBy);
 
 	// Chapter 3.1.3
@@ -228,12 +226,13 @@ int SendProbe(int socket)
 	struct wsdd__ProbeType *pWsdd__ProbeType = NULL;	
 	struct soap *pSoap=NULL;
 	char *pAction=NULL, *pMessageID=NULL, *pTo=NULL;
-	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pXAddrs=NULL, *pMatchBy=NULL;
+	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pMatchBy=NULL;
 				
 	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
 		return 0;
 		
-	pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Probe");
+	//pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Probe");
+	pAction = CopyString("http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe");
 	pMessageID = nativeGetMessageId();
 	pTo = nativeGetTo();
    pEndpointAddress = nativeGetEndpointAddress();
@@ -325,12 +324,13 @@ int SendResolve(int socket)
 	struct soap *pSoap=NULL;
 
 	char *pAction=NULL, *pMessageID=NULL, *pTo=NULL;
-	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pXAddrs=NULL, *pMatchBy=NULL;
+	char *pEndpointAddress=NULL, *pTypes=NULL, *pItem=NULL, *pMatchBy=NULL;
 				
 	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
 		return 0;
 		
-	pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Resolve");
+	//pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/Resolve");
+	pAction = CopyString("http://schemas.xmlsoap.org/ws/2005/04/discovery/Resolve");
 	pMessageID = nativeGetMessageId();
 	pTo = nativeGetTo();
    pEndpointAddress = nativeGetEndpointAddress();
@@ -410,7 +410,8 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSender
 	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
 		return 0;
 		
-	pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/ProbeMatches");
+	//pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/ProbeMatches");
+	pAction = CopyString("http://schemas.xmlsoap.org/ws/2005/04/discovery/ProbeMatches");
 	pMessageID = nativeGetMessageId();
 	pTo = nativeGetTo();
    pEndpointAddress = nativeGetEndpointAddress();
@@ -520,7 +521,8 @@ int SendResolveMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSend
 	if(nativeGetDiscoveryMode() == NONDISCOVERABLE )
 		return 0;
 		
-	pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/ResolveMatches");
+	//pAction = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/ResolveMatches");
+	pAction = CopyString("http://schemas.xmlsoap.org/ws/2005/04/discovery/ResolveMatches");
 	pMessageID = nativeGetMessageId();
 	pTo =nativeGetTo();
    pEndpointAddress = nativeGetEndpointAddress();
@@ -760,6 +762,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 		}
 	}
 	
+	
+	#if 0
 	// For ONVIF only
 	if(wsdd__Probe->Types)
 	{
@@ -775,6 +779,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
 		free(pType);
       DBG("wsdd__Probe->Types = %s\n",wsdd__Probe->Types);
 	}
+	#endif
 	
 	// Test only
 	//bScopeValid = 1;

@@ -6,8 +6,8 @@
 #include <ifaddrs.h>
 
 // Below 4 message is send as multicast packet
-extern int SendHello(int socket);
-extern int SendBye(int socket);
+extern int SendHello(int socket, char *pXAddrs);
+extern int SendBye(int socket, char *pXAddrs);
 extern int SendProbe(int socket);
 extern int SendResolve(int socket);
 extern int SendFault(int socket, struct sockaddr_in *pSockAddr_In);

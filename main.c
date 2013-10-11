@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 int _server(int argc, char **argv)
 {
    int i=0;
-   int msocket_cli = 0, msocket_cli2 = 0, msocket_srv = 0, msocket_srv2 = 0;	
+   int msocket_cli = 0, msocket_cli2 = 0, msocket_srv = 0;	
    char *pAddress=NULL, *pAddressWifi=NULL;
    struct soap* pSoap = NULL;
    
@@ -101,16 +101,16 @@ int _server(int argc, char **argv)
    for(i=0;i<3;i++)
    {
       if(msocket_cli>0)
-         SendHello(msocket_cli); 
+         SendHello(msocket_cli, pAddress); 
       if(msocket_cli2>0)      
-         SendHello(msocket_cli2); 
+         SendHello(msocket_cli2, pAddressWifi); 
 	}
 
 	
 	close(msocket_cli);
 	close(msocket_cli2);
 
-   thread_ret=pthread_create( &tptr[thread_no].thread_tid, NULL, (void *) RecvThread, (void*)thread_no );
+   thread_ret=pthread_create( &tptr[thread_no].thread_tid, NULL, (void *) RecvThread, (void*) &thread_no );
    if(thread_ret!=0)
    {
       fprintf (stderr, "Create pthread error!\n");
@@ -148,7 +148,6 @@ int _server(int argc, char **argv)
 
 int _client(int argc, char **argv)
 {
-   int vLen = 0, vExecutableLen = 0;
    int msocket_cli = 0, msocket_cli2= 0;
    char *pAddress=NULL, *pAddressWifi=NULL;
    int vDataLen = 1024*5;
@@ -172,7 +171,7 @@ int _client(int argc, char **argv)
 	{
 		if(strcmp(argv[1],"1")==0)
 		{
-			SendHello(msocket_cli); 
+			SendHello(msocket_cli, pAddress); 
 		}
 		else if(strcmp(argv[1],"2")==0)
 		{
@@ -210,7 +209,7 @@ int _client(int argc, char **argv)
 		}					
 		else if(strcmp(argv[1],"4")==0)
 		{
-			SendBye(msocket_cli); 
+			SendBye(msocket_cli, pAddress); 
 		}
 		else if(strcmp(argv[1],"5")==0)
 		{	
@@ -249,7 +248,7 @@ int _client(int argc, char **argv)
 	}
 	else
 	{
-		SendHello(msocket_cli); 
+		SendHello(msocket_cli, pAddress); 
 	}
 	close(msocket_cli);
 	return 1;
@@ -292,9 +291,9 @@ void RecvThread(void* data)
                for(i=0;i<3;i++)
                {
                   if(msocket_cli>0)
-                     SendHello(msocket_cli); 
+                     SendHello(msocket_cli, pAddress); 
                   if(msocket_cli2>0)      
-                     SendHello(msocket_cli2); 
+                     SendHello(msocket_cli2, pAddressWifi); 
             	}               
             } 
             else if(recvmsg.mtype == ONVIF_MSG_REBOOT)
@@ -306,9 +305,9 @@ void RecvThread(void* data)
                   for(i=0;i<3;i++)
                   {
                      if(msocket_cli>0)
-                        SendBye(msocket_cli); 
+                        SendBye(msocket_cli, pAddress); 
                      if(msocket_cli2>0)      
-                        SendBye(msocket_cli2); 
+                        SendBye(msocket_cli2, pAddressWifi); 
                	}                                 
                }
             } 
@@ -320,9 +319,9 @@ void RecvThread(void* data)
                for(i=0;i<3;i++)
                {
                   if(msocket_cli>0)
-                     SendHello(msocket_cli); 
+                     SendHello(msocket_cli, pAddress); 
                   if(msocket_cli2>0)      
-                     SendHello(msocket_cli2); 
+                     SendHello(msocket_cli2, pAddressWifi); 
             	}  
             }
             close(msocket_cli);

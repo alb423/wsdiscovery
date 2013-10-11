@@ -18,8 +18,8 @@
 #include "porting.h"
 
 static struct soap *_gpSoap=NULL;
-char gpLocalAddr[NET_MAX_INTERFACE][32]={0};
-char gpMacAddr[NET_MAX_INTERFACE][32]={0};
+char gpLocalAddr[NET_MAX_INTERFACE][32]={{0}};
+char gpMacAddr[NET_MAX_INTERFACE][32]={{0}};
 #define LOCAL_ADDR gpLocalAddr//"192.168.2.102"
 
 struct sockaddr_in gMSockAddr;
@@ -160,7 +160,34 @@ char * initMyIpString(void)
             memcpy(gpLocalAddr[vInterfaceCount], addressBuffer, strlen(addressBuffer));
             memset(pInterface, 0 ,128);
             memcpy(pInterface, ifa->ifa_name, strlen(ifa->ifa_name));
-            vInterfaceCount++;
+            
+            #ifdef __APPLE__
+               sprintf(gpMacAddr[0], "10ddb1acc6ee");
+               sprintf(gpMacAddr[1], "4c8d79eaee74");
+            #else            
+            {
+               int sock;
+               struct ifreq ifr;
+               
+               sock = socket(AF_INET, SOCK_DGRAM, 0);
+               ifr.ifr_addr.sa_family= AF_INET;
+               
+               strncpy(ifr.ifr_name, pInterface, IFNAMSIZ-1);
+               
+               ioctl(sock, SIOCGIFHWADDR, &ifr);
+               
+               close(sock);
+               
+               sprintf(gpMacAddr[vInterfaceCount], "%.2x%.2x%.2x%.2x%.2x%.2x", 
+               (unsigned char)ifr.ifr_hwaddr.sa_data[0],
+               (unsigned char)ifr.ifr_hwaddr.sa_data[1],
+               (unsigned char)ifr.ifr_hwaddr.sa_data[2],
+               (unsigned char)ifr.ifr_hwaddr.sa_data[3],
+               (unsigned char)ifr.ifr_hwaddr.sa_data[4],
+               (unsigned char)ifr.ifr_hwaddr.sa_data[5]);
+            }
+            #endif
+            vInterfaceCount++;            
          } 
       } 
       else if (ifa->ifa_addr->sa_family==AF_INET6) 
@@ -174,33 +201,6 @@ char * initMyIpString(void)
       }         
    }
    
-   #if 0
-   {
-      int sock;
-      struct ifreq ifr;
-      
-      sock = socket(AF_INET, SOCK_DGRAM, 0);
-      ifr.ifr_addr.sa_family= AF_INET;
-      
-      strncpy(ifr.ifr_name, pInterface, IFNAMSIZ-1);
-      
-      ioctl(sock, SIOCGIFHWADDR, &ifr);
-      
-      close(sock);
-      
-      sprintf(gpMacAddr, "%.2x%.2x%.2x%.2x%.2x%.2x", 
-      (unsigned char)ifr.ifr_hwaddr.sa_data[0],
-      (unsigned char)ifr.ifr_hwaddr.sa_data[1],
-      (unsigned char)ifr.ifr_hwaddr.sa_data[2],
-      (unsigned char)ifr.ifr_hwaddr.sa_data[3],
-      (unsigned char)ifr.ifr_hwaddr.sa_data[4],
-      (unsigned char)ifr.ifr_hwaddr.sa_data[5]);
-   }
-   #else
-      sprintf(gpMacAddr[0], "10ddb1acc6ee");
-      sprintf(gpMacAddr[1], "4c8d79eaee74");
-   #endif
-   
    
    DBG("gpLocalAddr is set to %s, MAC is %s\n\n", gpLocalAddr[0], gpMacAddr[0]);    
    if (ifAddrStruct!=NULL) freeifaddrs(ifAddrStruct);
@@ -210,7 +210,7 @@ char * initMyIpString(void)
 int CreateUnicastClient(struct sockaddr_in *pSockAddr)
 {
    // http://www.tenouk.com/Module41c.html
-   struct in_addr localInterface;
+   //struct in_addr localInterface;
    int sd=-1;
    
    struct timeval timeout;
