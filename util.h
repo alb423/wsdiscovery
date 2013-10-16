@@ -33,8 +33,10 @@ extern struct sockaddr_in gMSockAddr;
 extern char gpLocalAddr[NET_MAX_INTERFACE][32];
 
 extern int CreateMulticastClient(char *pAddress, int port);
-extern int CreateMulticastServer(void);
-extern int CreateUnicastClient(struct sockaddr_in *pSockAddr);
+extern int CreateUnicastClient(struct sockaddr_in *pSockAddr,int port);
+
+extern int CreateMulticastServer(char *pAddress, int port);
+extern int CreateUnicastServer(char *pAddress, int port);
 
 // Xml send callback
 extern void clearXmlBuffer(void);
@@ -64,6 +66,10 @@ extern long our_random() ;
 extern unsigned int our_random16();
 extern unsigned int our_random32();
 extern void UuidGen(char *uuidbuf);
+
+
+extern void SetMulticastFlag(int bFlag);
+extern int GetMulticastFlag();
 
 #endif
 
