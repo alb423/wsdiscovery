@@ -16,7 +16,7 @@
 #include "util.h"
 #include "mySoapStub.h"
 #include "porting.h"
-                 	   
+                       
 
 #define PERMS 0666
 #define ONVIF_DIS_MSG_KEY           ((key_t) 88888L)
@@ -26,15 +26,15 @@
 
 typedef struct native_msg_buf
 {
-	long mtype;
-	char mtext[4];
+   long mtype;
+   char mtext[4];
 } native_msg_buf;
 
-                 	   
+                       
 int thread_ret=0, thread_no=0;
 typedef struct {
-	pthread_t thread_tid;
-	long thread_count;
+   pthread_t thread_tid;
+   long thread_count;
 }tThread;
 tThread tptr[2];
 
@@ -84,14 +84,14 @@ int main(int argc, char **argv)
       else
       {
          return _server(argc, argv);
-      }		
+      }      
    }
    return 1;
 }
 
 int _server(int argc, char **argv)
 {
-   int i =0;
+   int i=0;
    int msocket_cli1 = 0, msocket_cli2 = 0;
    int msocket_srv = 0;
    int vReciveLen=0;
@@ -101,23 +101,22 @@ int _server(int argc, char **argv)
    
    initMyIpString();
    
-   // For MAC only
    pAddress = getMyIpString(INTERFACE_NAME_1);
    pAddressWifi = getMyIpString(INTERFACE_NAME_2);
    
-   InitMyRandom(pAddress);	
+   InitMyRandom(pAddress);   
    if(pAddress)
    {
       msocket_cli1 = CreateMulticastClient(pAddress, MULTICAST_PORT);
    }
    if(pAddressWifi)
-   {		
+   {      
       msocket_cli2 = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
-   }	
+   }   
    
    msocket_srv = CreateMulticastServer(MULTICAST_ADDR, MULTICAST_PORT);
    pSoap = soap_new1(SOAP_IO_UDP);
-         
+   
    // send 3 times to avoid packet loss 
    for(i=0;i<3;i++)
    {
@@ -125,12 +124,12 @@ int _server(int argc, char **argv)
          SendHello(msocket_cli1, pAddress); 
       if(msocket_cli2>0)      
          SendHello(msocket_cli2, pAddressWifi); 
-	}	
+   }   
 
    free(pAddress);
    free(pAddressWifi);
-	close(msocket_cli1);
-	close(msocket_cli2);
+   close(msocket_cli1);
+   close(msocket_cli2);
 
    thread_ret=pthread_create( &tptr[thread_no].thread_tid, NULL, (void *) RecvThread, (void*)&thread_no );
    if(thread_ret!=0)
@@ -139,15 +138,15 @@ int _server(int argc, char **argv)
       exit (1);
    }
    thread_no++;   
-         	
+            
    while(1)
    {
             
       int vDataLen =0;
-		struct sockaddr_in vxSockAddrFrom;
-		memset((void*)&vxSockAddrFrom, 0, sizeof(vxSockAddrFrom));		
-		
-		vDataLen = XML_BUFFER_LEN;
+      struct sockaddr_in vxSockAddrFrom;
+      memset((void*)&vxSockAddrFrom, 0, sizeof(vxSockAddrFrom));      
+      
+      vDataLen = XML_BUFFER_LEN;
       _vXmlBufferMaxLen = XML_BUFFER_LEN;
       _pXmlBuffer = malloc(_vXmlBufferMaxLen+1);
       memset(_pXmlBuffer, 0, _vXmlBufferMaxLen+1);
@@ -202,8 +201,8 @@ int _server(int argc, char **argv)
                if(pTmp)
                   memcpy(pSrc, pTmp, strlen(pTmp));
                  
-               DBG("%s %s :%d nIndex=%d pSrc=%s:%d, pDst=%s\n",__FILE__,__func__, __LINE__, pi->ipi_ifindex, pSrc, ntohs(localaddr.sin_port), pDst);	               
-               DBG("%s %s :%d localaddr=%s port=%d\n",__FILE__,__func__, __LINE__, inet_ntoa(localaddr.sin_addr), ntohs(localaddr.sin_port));	
+               DBG("%s %s :%d nIndex=%d pSrc=%s:%d, pDst=%s\n",__FILE__,__func__, __LINE__, pi->ipi_ifindex, pSrc, ntohs(localaddr.sin_port), pDst);                  
+               DBG("%s %s :%d localaddr=%s port=%d\n",__FILE__,__func__, __LINE__, inet_ntoa(localaddr.sin_addr), ntohs(localaddr.sin_port));   
                
                if(strncmp(pDst, MULTICAST_ADDR, strlen(MULTICAST_ADDR))==0)
                {
@@ -226,14 +225,14 @@ int _server(int argc, char **argv)
          }
          else if(cmsg->cmsg_type == IPPROTO_IP)
          {         
-            DBG("%s %s :%d Good Job\n",__FILE__,__func__, __LINE__);	
+            DBG("%s %s :%d Good Job\n",__FILE__,__func__, __LINE__);   
          }
       }
 
       pSoap->frecv = myrecv;
     
       soap_serve(pSoap);
-      DBG("%s %s :%d peer addr=%s, port=%d, error=%d\n",__FILE__,__func__, __LINE__, inet_ntoa(pSoap->peer.sin_addr), ntohs(pSoap->peer.sin_port),  pSoap->error);	
+      DBG("%s %s :%d peer addr=%s, port=%d, error=%d\n",__FILE__,__func__, __LINE__, inet_ntoa(pSoap->peer.sin_addr), ntohs(pSoap->peer.sin_port),  pSoap->error);   
       if(pSoap->header)
       {
          DBG("%s %s :%d Action = %s\n",__FILE__,__func__, __LINE__, pSoap->header->wsa5__Action);
@@ -281,85 +280,85 @@ int _client(int argc, char **argv)
    if(pAddressWifi)
       msocket_cli2 = CreateMulticastClient(pAddressWifi, MULTICAST_PORT);
       
-	usleep(500000);
-	if(argc>=2)
-	{
-		if(strcmp(argv[1],"1")==0)
-		{
-			SendHello(msocket_cli, pAddress); 
-		}
-		else if(strcmp(argv[1],"2")==0)
-		{
-			int vReciveLen=0;
-			struct sockaddr_in vxSockAddr;
-			SOAP_SOCKLEN_T vSockLen = (SOAP_SOCKLEN_T)sizeof(vxSockAddr);
-			memset((void*)&vxSockAddr, 0, sizeof(vxSockAddr));
+   usleep(500000);
+   if(argc>=2)
+   {
+      if(strcmp(argv[1],"1")==0)
+      {
+         SendHello(msocket_cli, pAddress); 
+      }
+      else if(strcmp(argv[1],"2")==0)
+      {
+         int vReciveLen=0;
+         struct sockaddr_in vxSockAddr;
+         SOAP_SOCKLEN_T vSockLen = (SOAP_SOCKLEN_T)sizeof(vxSockAddr);
+         memset((void*)&vxSockAddr, 0, sizeof(vxSockAddr));
 
-			SendProbe(msocket_cli); 
-			
-			DBG("Waiting Response\n");
-			
-			vDataLen = sizeof(pDataBuf);
-			vReciveLen = recvfrom(msocket_cli, pDataBuf, (SOAP_WINSOCKINT)vDataLen, MSG_WAITALL, (struct sockaddr*)&vxSockAddr, &vSockLen);
-			DBG("got Response, vReciveLen=%d, \n", vReciveLen);
-			DBG("msocket_cli=%d, rsp s_addr=%s, rsp sin_port=%d\n", msocket_cli, inet_ntoa(vxSockAddr.sin_addr), htons(vxSockAddr.sin_port));
-			DBG("Buf=%s\n", pDataBuf);
-		}					
-		else if(strcmp(argv[1],"3")==0)
-		{
-			int vErr=0;
-			struct sockaddr_in vxSockAddr;
-			SOAP_SOCKLEN_T vSockLen = (SOAP_SOCKLEN_T)sizeof(vxSockAddr);
-			memset((void*)&vxSockAddr, 0, sizeof(vxSockAddr));
+         SendProbe(msocket_cli); 
+         
+         DBG("Waiting Response\n");
+         
+         vDataLen = sizeof(pDataBuf);
+         vReciveLen = recvfrom(msocket_cli, pDataBuf, (SOAP_WINSOCKINT)vDataLen, MSG_WAITALL, (struct sockaddr*)&vxSockAddr, &vSockLen);
+         DBG("got Response, vReciveLen=%d, \n", vReciveLen);
+         DBG("msocket_cli=%d, rsp s_addr=%s, rsp sin_port=%d\n", msocket_cli, inet_ntoa(vxSockAddr.sin_addr), htons(vxSockAddr.sin_port));
+         DBG("Buf=%s\n", pDataBuf);
+      }               
+      else if(strcmp(argv[1],"3")==0)
+      {
+         int vErr=0;
+         struct sockaddr_in vxSockAddr;
+         SOAP_SOCKLEN_T vSockLen = (SOAP_SOCKLEN_T)sizeof(vxSockAddr);
+         memset((void*)&vxSockAddr, 0, sizeof(vxSockAddr));
 
-			SendResolve(msocket_cli); 
-			
-			DBG("Waiting Response\n");
-			
-			vDataLen = sizeof(pDataBuf);
-			vErr = recvfrom(msocket_cli, pDataBuf, (SOAP_WINSOCKINT)vDataLen, MSG_WAITALL, (struct sockaddr*)&vxSockAddr, &vSockLen);
-			DBG( "got Response, vErr=%d, \n", vErr);
-			DBG("msocket_cli=%d, rsp s_addr=%s, rsp sin_port=%d\n", msocket_cli, inet_ntoa(vxSockAddr.sin_addr), htons(vxSockAddr.sin_port));
-			DBG("Buf=%s\n", pDataBuf);					
-		}					
-		else if(strcmp(argv[1],"4")==0)
-		{
-			SendBye(msocket_cli, pAddress); 
-		}
-		else if(strcmp(argv[1],"5")==0)
-		{	
-			SendProbeMatches(msocket_cli, &gMSockAddr, NULL);
-		}					
-		else if(strcmp(argv[1],"6")==0)
-		{
-			SendResolveMatches(msocket_cli, &gMSockAddr, NULL); 
-		}			
-		else if(strcmp(argv[1],"u")==0)
-		{
-			send_msg_update_scopes();		
-		}	
-		else if(strcmp(argv[1],"r")==0)
-		{
-			send_msg_reboot();		
-		}	
-		else if(strcmp(argv[1],"d")==0)
-		{
-			if(argc>2)
-			{
-				if(strcmp(argv[2],"0")==0)
-					send_msg_discoverymode('0');	
-				else
-					send_msg_discoverymode('1');	
-			}
-			else
-			{
-				send_msg_discoverymode('1');
-			}				
-		}			
-		else if(strcmp(argv[1],"q")==0)
-		{
-		   #if 1
-		   int usocket_cli = 0;
+         SendResolve(msocket_cli); 
+         
+         DBG("Waiting Response\n");
+         
+         vDataLen = sizeof(pDataBuf);
+         vErr = recvfrom(msocket_cli, pDataBuf, (SOAP_WINSOCKINT)vDataLen, MSG_WAITALL, (struct sockaddr*)&vxSockAddr, &vSockLen);
+         DBG( "got Response, vErr=%d, \n", vErr);
+         DBG("msocket_cli=%d, rsp s_addr=%s, rsp sin_port=%d\n", msocket_cli, inet_ntoa(vxSockAddr.sin_addr), htons(vxSockAddr.sin_port));
+         DBG("Buf=%s\n", pDataBuf);               
+      }               
+      else if(strcmp(argv[1],"4")==0)
+      {
+         SendBye(msocket_cli, pAddress); 
+      }
+      else if(strcmp(argv[1],"5")==0)
+      {   
+         SendProbeMatches(msocket_cli, &gMSockAddr, NULL);
+      }               
+      else if(strcmp(argv[1],"6")==0)
+      {
+         SendResolveMatches(msocket_cli, &gMSockAddr, NULL); 
+      }         
+      else if(strcmp(argv[1],"u")==0)
+      {
+         send_msg_update_scopes();      
+      }   
+      else if(strcmp(argv[1],"r")==0)
+      {
+         send_msg_reboot();      
+      }   
+      else if(strcmp(argv[1],"d")==0)
+      {
+         if(argc>2)
+         {
+            if(strcmp(argv[2],"0")==0)
+               send_msg_discoverymode('0');   
+            else
+               send_msg_discoverymode('1');   
+         }
+         else
+         {
+            send_msg_discoverymode('1');
+         }            
+      }         
+      else if(strcmp(argv[1],"q")==0)
+      {
+         #if 1
+         int usocket_cli = 0;
          struct sockaddr_in vSockAddr;
                
          memset((char *) &vSockAddr, 0, sizeof(vSockAddr));
@@ -368,24 +367,24 @@ int _client(int argc, char **argv)
          vSockAddr.sin_addr.s_addr = inet_addr(pAddress);
          
          vSockAddr.sin_port = htons(MULTICAST_PORT);
-         usocket_cli = CreateUnicastClient(&vSockAddr, MULTICAST_PORT);		   
-			SendFault(usocket_cli, &vSockAddr, NULL); 
-			
-			#else
-			SendFault(msocket_cli, &gMSockAddr, NULL);
-			#endif
-		}																						
-	}
-	else
-	{
-		SendHello(msocket_cli, pAddress); 
-	}
-	close(msocket_cli);
+         usocket_cli = CreateUnicastClient(&vSockAddr, MULTICAST_PORT);         
+         SendFault(usocket_cli, &vSockAddr, NULL); 
+         
+         #else
+         SendFault(msocket_cli, &gMSockAddr, NULL);
+         #endif
+      }                                                                  
+   }
+   else
+   {
+      SendHello(msocket_cli, pAddress); 
+   }
+   close(msocket_cli);
    
    free(pAddress);
    free(pAddressWifi);
    
-	return 1;
+   return 1;
 }
 
 
@@ -396,7 +395,7 @@ void RecvThread(void* data)
    int msocket_cli = 0, msocket_cli2 = 0;
    char *pAddress=NULL, *pAddressWifi=NULL;    
    pthread_detach(pthread_self());
-     			    
+                  
    DBG("RecvThread start....\n");
    if((msqid = msgget(ONVIF_DIS_MSG_KEY, PERMS | IPC_CREAT)) >= 0)
    {
@@ -426,7 +425,7 @@ void RecvThread(void* data)
                      SendHello(msocket_cli, pAddress); 
                   if(msocket_cli2>0)      
                      SendHello(msocket_cli2, pAddressWifi); 
-            	}               
+               }               
             } 
             else if(recvmsg.mtype == ONVIF_MSG_REBOOT)
             {
@@ -440,7 +439,7 @@ void RecvThread(void* data)
                         SendBye(msocket_cli, pAddress); 
                      if(msocket_cli2>0)      
                         SendBye(msocket_cli2, pAddressWifi); 
-               	}                                 
+                  }                                 
                }
             } 
             else if(recvmsg.mtype == ONVIF_MSG_DISCOVERYMODE)
@@ -454,10 +453,10 @@ void RecvThread(void* data)
                      SendHello(msocket_cli, pAddress); 
                   if(msocket_cli2>0)      
                      SendHello(msocket_cli2, pAddressWifi); 
-            	}  
+               }  
             }
             close(msocket_cli);
-	         close(msocket_cli2);
+            close(msocket_cli2);
             free(pAddress);
             free(pAddressWifi);
             usleep(500000);

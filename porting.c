@@ -30,23 +30,23 @@ char *nativeGetXAddrs(char *pAddrToResponse)
 	char *pAddrToSend = NULL;
 	
 	// Resonse the ip with the same netmask
-	for(i=0; i<NET_MAX_INTERFACE; i++)
-	{
-		pAddrToSend = gpLocalAddr[i];
-		vLen = strlen(pAddrToSend);
+   for(i=0; i<NET_MAX_INTERFACE; i++)
+   {
+      pAddrToSend = gpLocalAddr[i];
+      vLen = strlen(pAddrToSend);
       if(vLen>0)
       {
-		for(j=vLen-1;j>=0;j--)
-		{
-			if(pAddrToSend[j]=='.')
-				break;
-			vSuffix++;
-		}
-		
-		if(strncmp(pAddrToSend, pAddrToResponse, vLen-vSuffix)==0)
-			break;
-	}
-	}
+         for(j=vLen-1;j>=0;j--)
+         {
+            if(pAddrToSend[j]=='.')
+               break;
+            vSuffix++;
+         }
+
+         if(strncmp(pAddrToSend, pAddrToResponse, vLen-vSuffix)==0)
+            break;
+      }
+   }
    
    if(strlen(pAddrToSend)==0)
       pAddrToSend = gpLocalAddr[0];

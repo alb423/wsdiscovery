@@ -64,7 +64,7 @@ void * MyMalloc(int vSize)
    char *pSrc = NULL;
    
    if(vSize<=0) return NULL;
-      
+
    pSrc = malloc(vSize);
    memset(pSrc, 0, vSize);
    
@@ -171,7 +171,7 @@ char * initMyIpString(void)
                struct ifreq ifr;
                
                sock = socket(AF_INET, SOCK_DGRAM, 0);
-               ifr.ifr_addr.sa_family= AF_INET;
+               ifr.ifr_addr.sa_family = AF_INET;
                
                strncpy(ifr.ifr_name, pInterface, IFNAMSIZ-1);
                
@@ -186,9 +186,10 @@ char * initMyIpString(void)
                (unsigned char)ifr.ifr_hwaddr.sa_data[3],
                (unsigned char)ifr.ifr_hwaddr.sa_data[4],
                (unsigned char)ifr.ifr_hwaddr.sa_data[5]);
+               //DBG("MAC %s\n", gpMacAddr[vInterfaceCount]); 
             }
             #endif
-            vInterfaceCount++;            
+            vInterfaceCount++;
          } 
       } 
       else if (ifa->ifa_addr->sa_family==AF_INET6) 
@@ -212,7 +213,7 @@ int CreateUnicastClient(struct sockaddr_in *pSockAddr, int port)
 {
    // http://www.tenouk.com/Module41c.html
    int sd=-1;
-
+   
    struct timeval timeout;
    timeout.tv_sec  = 10;
    timeout.tv_usec = 0;
