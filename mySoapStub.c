@@ -46,7 +46,6 @@ int SendHello(int socket, char *pXAddrsIn)
    pTypes = nativeGetTypes();
    pItem = nativeGetScopesItem();
    pXAddrs = nativeGetXAddrs(pXAddrsIn);
-   pMatchBy = CopyString("http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01/rfc3986");
    	
 	pSoap = soap_new1(SOAP_IO_UDP);		
 	pSoap->fsend = mysend;
@@ -676,8 +675,9 @@ int SendFault(int socket, struct sockaddr_in *pSockAddr_In, char *pSenderMsgId)
    pXAddrs = nativeGetXAddrs(inet_ntoa(pSockAddr_In->sin_addr));
 	
 	pSoap = soap_new1(SOAP_IO_UDP);	
+	pSoap->version = 2;
 	pSoap->fsend = mysend;
-   pSoap->namespaces = namespaces_fault;
+   //pSoap->namespaces = namespaces_fault;
 
 	// Build SOAP Header
 	soap_header(pSoap);
@@ -697,43 +697,45 @@ int SendFault(int socket, struct sockaddr_in *pSockAddr_In, char *pSenderMsgId)
    }
 	
 	
-	// Build Fault Message
-	pFault = (struct SOAP_ENV__Fault*)soap_malloc(pSoap,sizeof(struct SOAP_ENV__Fault));
-	soap_default_SOAP_ENV__Fault(pSoap, pFault);
-	pFault->SOAP_ENV__Code = (struct SOAP_ENV__Code*)soap_malloc(pSoap,sizeof(struct SOAP_ENV__Code));
-	soap_default_SOAP_ENV__Code(pSoap, pFault->SOAP_ENV__Code);
-	pFault->SOAP_ENV__Code->SOAP_ENV__Value = MySoapCopyString(pSoap, "SOAP-ENV:Sender");
-	pFault->SOAP_ENV__Code->SOAP_ENV__Subcode = (struct SOAP_ENV__Code*)soap_malloc(pSoap,sizeof(struct SOAP_ENV__Code));
-	pFault->SOAP_ENV__Code->SOAP_ENV__Subcode->SOAP_ENV__Value = MySoapCopyString(pSoap, "wsdd:MatchingRuleNotSupported");
-	pFault->SOAP_ENV__Code->SOAP_ENV__Subcode->SOAP_ENV__Subcode = NULL;
+	// Build Fault Message	
 	
-	pFault->SOAP_ENV__Reason = (struct SOAP_ENV__Reason*)soap_malloc(pSoap,sizeof(struct SOAP_ENV__Reason));
-	soap_default_SOAP_ENV__Reason(pSoap, pFault->SOAP_ENV__Reason);
-	pFault->SOAP_ENV__Reason->SOAP_ENV__Text = MySoapCopyString(pSoap, "the matching rule specified is not supported");
+	// malloc pSoap->fault, pSoap->fault->SOAP_ENV__Code, pSoap->fault->SOAP_ENV__Reason
+	soap_fault(pSoap);
+	pSoap->fault->SOAP_ENV__Code->SOAP_ENV__Value = MySoapCopyString(pSoap, "SOAP-ENV:Sender");
 	
-	pFault->SOAP_ENV__Detail = (struct SOAP_ENV__Detail*)soap_malloc(pSoap,sizeof(struct SOAP_ENV__Detail));
-	soap_default_SOAP_ENV__Detail(pSoap, pFault->SOAP_ENV__Detail);
+   // malloc pSoap->fault, pSoap->fault->SOAP_ENV__Code->SOAP_ENV__Subcode
+	soap_faultsubcode(pSoap);
+	pSoap->fault->SOAP_ENV__Code->SOAP_ENV__Subcode->SOAP_ENV__Value = MySoapCopyString(pSoap, "wsdd:MatchingRuleNotSupported");
+	pSoap->fault->SOAP_ENV__Code->SOAP_ENV__Subcode->SOAP_ENV__Subcode = NULL;
+	pSoap->fault->SOAP_ENV__Reason->SOAP_ENV__Text = MySoapCopyString(pSoap, "the matching rule specified is not supported");
+	
+	// malloc pSoap->fault, pSoap->fault->SOAP_ENV__Detail
+	soap_faultdetail(pSoap);
    {
       int vLen = 0;
       char *pTmp = NULL;
       vLen = strlen(pItem);
-      pTmp = soap_malloc(pSoap, vLen + 100);
+      pTmp = malloc(vLen + 100);
       memset(pTmp, 0, vLen+100);
       sprintf(pTmp, "<wsdd:SupportedMatchingRules>%s</wsdd:SupportedMatchingRules>", pItem);	
-      pFault->SOAP_ENV__Detail->__any = MySoapCopyString(pSoap, pTmp);
+      pSoap->fault->SOAP_ENV__Detail->__any = MySoapCopyString(pSoap, pTmp);
       free(pTmp);
    }	
    
+   // mimic soap_send_fault()
 	soap_serializeheader(pSoap);
-
+   soap_serializefault(pSoap);
+   soap_begin_count(pSoap);
+   
 	soap_response(pSoap, SOAP_FAULT);
 	soap_envelope_begin_out(pSoap);
 	soap_putheader(pSoap);
 	soap_body_begin_out(pSoap);
-	vErr = soap_put_SOAP_ENV__Fault(pSoap, pFault, "SOAP-ENV:Fault", "SOAP-ENV:Fault");
+	soap_putfault(pSoap);
 	soap_body_end_out(pSoap);
 	soap_envelope_end_out(pSoap);
 	soap_end_send(pSoap);
+
 	soap_destroy(pSoap);
 	soap_end(pSoap);
    soap_free(pSoap);

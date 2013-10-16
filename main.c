@@ -91,6 +91,7 @@ int main(int argc, char **argv)
 
 int _server(int argc, char **argv)
 {
+   int i =0;
    int msocket_cli1 = 0, msocket_cli2 = 0;
    int msocket_srv = 0;
    int vReciveLen=0;
