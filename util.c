@@ -359,8 +359,10 @@ int CreateMulticastServer(char *pAddress, int port)
          if(setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group)) < 0)
          {
             perror("setsockopt IP_ADD_MEMBERSHIP error");
-            close(sd);
-            exit(1);
+            // This error may happened if some process had already do IP_ADD_MEMBERSHIP
+            // This error can be omited
+            //close(sd);
+            //exit(1);
          }
          else
          {
