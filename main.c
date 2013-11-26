@@ -203,7 +203,7 @@ int _server(int argc, char **argv)
                  
                DBG("%s %s :%d nIndex=%d pSrc=%s:%d, pDst=%s\n",__FILE__,__func__, __LINE__, pi->ipi_ifindex, pSrc, ntohs(localaddr.sin_port), pDst);                  
                DBG("%s %s :%d localaddr=%s port=%d\n",__FILE__,__func__, __LINE__, inet_ntoa(localaddr.sin_addr), ntohs(localaddr.sin_port));   
-               
+                                             
                if(strncmp(pDst, MULTICAST_ADDR, strlen(MULTICAST_ADDR))==0)
                {
                   // The receive packet is send to host's multicast address
@@ -216,7 +216,7 @@ int _server(int argc, char **argv)
                }                  
                                  
                pSoap->peer.sin_addr.s_addr = inet_addr(pSrc);
-               pSoap->peer.sin_port = htons(MULTICAST_PORT);
+               pSoap->peer.sin_port = localaddr.sin_port;//htons(MULTICAST_PORT);
                pSoap->sendsk = pi->ipi_ifindex;
                //pSoap->sendsk = msocket_srv;
                               
