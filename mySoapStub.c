@@ -834,12 +834,10 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
       }
    }
    
-   
-   // For IPv4 only
-   vSocket = CreateUnicastClient(&pSoap->peer,MULTICAST_PORT);
-   
+      
    if(bMulticast)
    {
+      vSocket = CreateUnicastClient(&pSoap->peer,MULTICAST_PORT);
       if(bScopeValid)
       {
          char *pSenderMessageId=NULL;
@@ -863,6 +861,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __wsdd__Probe(struct soap *pSoap, struct wsdd__ProbeTy
    }
    else
    {
+      vSocket = CreateUnicastClient(&pSoap->peer,(int)&pSoap->peer.sin_port);
       if(bMatchValid == 0)
       {
          // Chapter 7.3.6 SOAP Fault Messages
