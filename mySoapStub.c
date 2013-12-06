@@ -522,12 +522,54 @@ int SendProbeMatches(int socket, struct sockaddr_in *pSockAddr_In, char *pSender
    int vBufLen = strlen(pBuffer);      
    //DBG("vErr=%d, Len=%d, Buf=\n%s\n", vErr, vBufLen, pBuffer);
    
+   // Test for maximus sendTo Capability()
+   // The length field of UDP is 16 bits, so the max length of a UDP packet should be 2^16=65536
+   // But the default limitation of sendto() may be samller.
+   // We can use setsockopt() to increase the value. 
+#if 0
+   
+   int bufsize; 
+   unsigned int size = sizeof(bufsize);
+   getsockopt(socket,SOL_SOCKET, SO_SNDBUF, &bufsize, &size);
+   DBG("SO_SNDBUF bufsize=%d\n", bufsize); // 9216
+   
+   bufsize=65535;
+   setsockopt(socket, SOL_SOCKET, SO_SNDBUF, &bufsize, sizeof(bufsize));
+   getsockopt(socket,SOL_SOCKET, SO_SNDBUF, &bufsize, &size);
+   DBG("Change SO_SNDBUF bufsize=%d\n", bufsize); // 9216
+      
+   // test with 60kBuffer
+   int i=0, vNum=30; 
+   int p60K_vBufLen = vNum*strlen(pBuffer)+1;
+   char *p60K_Buffer = malloc(p60K_vBufLen);
+   memset(p60K_Buffer, 0, p60K_vBufLen);
+   DBG("p60K_Buffer alloc success, len=%d\n", p60K_vBufLen);
+      
+   // when size is 8921, sendto() ok
+   // when size is 10717, sendto() error
+   // if we change SO_SNDBUF, than we can send more data
+   for(i=0;i<vNum;i++)
+   {
+      memcpy(p60K_Buffer+(i*vBufLen), pBuffer, vBufLen);
+   }
+   
+   if(sendto(socket, p60K_Buffer, p60K_vBufLen, 0, (struct sockaddr*)pSockAddr_In, sizeof(struct sockaddr_in)) < 0)
+   {
+      perror("Sending datagram message error");
+   }
+   else
+     DBG("Sending SendProbeMatches message...OK\n");  
+     
+   free(p60K_Buffer);
+  
+#else   
    if(sendto(socket, pBuffer, vBufLen, 0, (struct sockaddr*)pSockAddr_In, sizeof(struct sockaddr_in)) < 0)
    {
       perror("Sending datagram message error");
    }
    else
      DBG("Sending SendProbeMatches message...OK\n");   
+#endif
      
    clearXmlBuffer();
      
