@@ -10,7 +10,14 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-#include <ifaddrs.h>
+#ifdef __APPLE__
+    #include <sys/socket.h>
+    #include <sys/sysctl.h>
+    #include <net/if.h>
+    #include <net/if_dl.h>
+#else
+    #include <ifaddrs.h>
+#endif
 
 
 #include "util.h"
@@ -161,10 +168,75 @@ char * initMyIpString(void)
             memcpy(pInterface, ifa->ifa_name, strlen(ifa->ifa_name));
             
             #ifdef __APPLE__
-               // I don't know how to get Mac Address in Mac OS
-               sprintf(gpMacAddr[0], "10ddb1acc6ee");
-               sprintf(gpMacAddr[1], "4c8d79eaee74");
-            #else            
+            // Reference https://gist.github.com/Coeur/1409855
+            {
+                int                 mgmtInfoBase[6];
+                char                *msgBuffer = NULL;
+                char                *errorFlag = NULL;
+                size_t              length;
+
+                // Setup the management Information Base (mib)
+                mgmtInfoBase[0] = CTL_NET;        // Request network subsystem
+                mgmtInfoBase[1] = AF_ROUTE;       // Routing table info
+                mgmtInfoBase[2] = 0;
+                mgmtInfoBase[3] = AF_LINK;        // Request link layer information
+                mgmtInfoBase[4] = NET_RT_IFLIST;  // Request all configured interfaces
+
+
+                // The interface name should be decided runtime
+                int sock;
+                struct ifreq ifr;
+
+                sock = socket(AF_INET, SOCK_DGRAM, 0);
+                ifr.ifr_addr.sa_family = AF_INET;
+
+                strncpy(ifr.ifr_name, ifa->ifa_name, strlen(ifa->ifa_name));
+                close(sock);
+                
+                // With all configured interfaces requested, get handle index
+                //if ((mgmtInfoBase[5] = if_nametoindex("en0")) == 0)
+                if ((mgmtInfoBase[5] = if_nametoindex(ifr.ifr_name)) == 0)
+                    errorFlag = "if_nametoindex failure";
+                // Get the size of the data available (store in len)
+                else if (sysctl(mgmtInfoBase, 6, NULL, &length, NULL, 0) < 0)
+                    errorFlag = "sysctl mgmtInfoBase failure";
+                // Alloc memory based on above call
+                else if ((msgBuffer = malloc(length)) == NULL)
+                    errorFlag = "buffer allocation failure";
+                // Get system information, store in buffer
+                else if (sysctl(mgmtInfoBase, 6, msgBuffer, &length, NULL, 0) < 0) {
+                    free(msgBuffer);
+                    errorFlag = "sysctl msgBuffer failure";
+                } else {
+                    // Map msgbuffer to interface message structure
+                    struct if_msghdr *interfaceMsgStruct = (struct if_msghdr *) msgBuffer;
+
+                    // Map to link-level socket structure
+                    struct sockaddr_dl *socketStruct = (struct sockaddr_dl *) (interfaceMsgStruct + 1);
+
+                    // Copy link layer address data in socket structure to an array
+                    unsigned char macAddress[6]= {0};
+                    memcpy(&macAddress, socketStruct->sdl_data + socketStruct->sdl_nlen, 6);
+
+                    // Read from char array into a string object, into traditional Mac address format
+                    sprintf(gpMacAddr[vInterfaceCount], "%.2x%.2x%.2x%.2x%.2x%.2x",
+                            (unsigned char)macAddress[0],
+                            (unsigned char)macAddress[1],
+                            (unsigned char)macAddress[2],
+                            (unsigned char)macAddress[3],
+                            (unsigned char)macAddress[4],
+                            (unsigned char)macAddress[5]);
+                    DBG("MAC %s\n", gpMacAddr[vInterfaceCount]);
+
+                    // Release the buffer memory
+                    free(msgBuffer);
+                }
+
+                if(errorFlag) printf("err = %s\n", errorFlag);
+            }
+            
+            #else
+     
             {
                // For linux system
                int sock;

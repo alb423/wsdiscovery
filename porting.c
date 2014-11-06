@@ -78,7 +78,7 @@ char *nativeGetTypes()
 	// For old version, return "dn:NetworkVideoTransmitter"
 	
 	//{"tds", "http://www.onvif.org/ver10/device/wsdl", NULL, NULL},
-	//return CopyString("tds:Device");
+	return CopyString("tds:Device");
 	
 	// {"dn", "http://www.onvif.org/ver10/network/wsdl", NULL, NULL},
 	return CopyString("dn:NetworkVideoTransmitter");
