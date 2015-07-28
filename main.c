@@ -126,8 +126,6 @@ int _server(int argc, char **argv)
          SendHello(msocket_cli2, pAddressWifi); 
    }   
 
-   free(pAddress);
-   free(pAddressWifi);
    close(msocket_cli1);
    close(msocket_cli2);
 
@@ -257,6 +255,8 @@ int _server(int argc, char **argv)
       _pXmlBuffer=NULL;      
    }
    
+   free(pAddress);
+   free(pAddressWifi);   
    soap_done(pSoap);
    soap_free(pSoap);
    close(msocket_srv);
