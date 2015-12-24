@@ -30,7 +30,7 @@ typedef struct native_msg_buf
    char mtext[4];
 } native_msg_buf;
 
-                       
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;      
 int thread_ret=0, thread_no=0;
 typedef struct {
    pthread_t thread_tid;
@@ -167,10 +167,13 @@ int _server(int argc, char **argv)
          .msg_iov = iov,
          .msg_iovlen = 1,
       };
-      
+
+            
       vReciveLen = recvmsg(msocket_srv, &mh, 0);
       //DBG("set msg_namelen=%d msg_iovlen=%d msg_controllen=%d, vReciveLen=%d\n", mh.msg_namelen, mh.msg_iovlen, mh.msg_controllen,vReciveLen);
                  
+      pthread_mutex_lock(&mutex);
+      
       struct cmsghdr *cmsg = NULL;      
       struct in_pktinfo *pi = NULL;           
       for(cmsg = CMSG_FIRSTHDR(&mh) ;
@@ -242,6 +245,7 @@ int _server(int argc, char **argv)
          {
             // exit the loop when receive fault
             // TODO: mark me
+            pthread_mutex_unlock(&mutex);
             break;
          }
 #endif         
@@ -252,7 +256,8 @@ int _server(int argc, char **argv)
       _vXmlBufferMaxLen=0;
       _vXmlBufferOffset=0;
       free(_pXmlBuffer);
-      _pXmlBuffer=NULL;      
+      _pXmlBuffer=NULL;    
+      pthread_mutex_unlock(&mutex);  
    }
    
    free(pAddress);
@@ -405,6 +410,7 @@ void RecvThread(void* data)
          DBG("start recv msg .. \n");
          if(msgrcv(msqid, &recvmsg, 4, 0, 0) > 0)
          {
+            pthread_mutex_lock(&mutex);
             initMyIpString();   
             pAddress = getMyIpString(INTERFACE_NAME_1);
             pAddressWifi = getMyIpString(INTERFACE_NAME_2);
@@ -459,6 +465,7 @@ void RecvThread(void* data)
             close(msocket_cli2);
             free(pAddress);
             free(pAddressWifi);
+            pthread_mutex_unlock(&mutex);
             usleep(500000);
          }
          usleep(500000);
@@ -472,6 +479,7 @@ void RecvThread(void* data)
   
    close(msocket_cli);
    DBG("RecvThread end....\n");
+   pthread_mutex_destroy(&mutex);
    pthread_exit ("thread all done");
 }
 
