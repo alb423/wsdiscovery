@@ -265,6 +265,8 @@ int _server(int argc, char **argv)
    soap_done(pSoap);
    soap_free(pSoap);
    close(msocket_srv);
+   
+   pthread_mutex_destroy(&mutex);
    return 1;
 }
 
@@ -479,7 +481,6 @@ void RecvThread(void* data)
   
    close(msocket_cli);
    DBG("RecvThread end....\n");
-   pthread_mutex_destroy(&mutex);
    pthread_exit ("thread all done");
 }
 

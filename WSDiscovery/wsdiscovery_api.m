@@ -51,6 +51,7 @@ typedef struct {
     long thread_count;
 }tThread;
 
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 void RecvThread(void* data);
 
 #define XML_BUFFER_LEN 32*1024
@@ -166,6 +167,8 @@ static size_t myrecv(struct soap* pSoap, char *pData, size_t vLen)
         
         
         vReciveLen = recvmsg(msocket_srv, &mh, 0);
+        
+        pthread_mutex_lock(&mutex);
         //DBG("set msg_namelen=%d msg_iovlen=%d msg_controllen=%d, vReciveLen=%d\n", mh.msg_namelen, mh.msg_iovlen, mh.msg_controllen,vReciveLen);
         
         struct cmsghdr *cmsg = NULL;
@@ -239,6 +242,9 @@ static size_t myrecv(struct soap* pSoap, char *pData, size_t vLen)
             {
                 // exit the loop when receive fault
                 // TODO: mark me
+                soap_destroy(pSoap);
+                soap_end(pSoap);
+                pthread_mutex_unlock(&mutex);
                 break;
             }
 #endif
@@ -256,6 +262,7 @@ static size_t myrecv(struct soap* pSoap, char *pData, size_t vLen)
         _vXmlBufferOffset=0;
         free(_pXmlBuffer);
         _pXmlBuffer=NULL;
+        pthread_mutex_unlock(&mutex);
     }
     
     free(pAddress);
@@ -263,6 +270,8 @@ static size_t myrecv(struct soap* pSoap, char *pData, size_t vLen)
     soap_done(pSoap);
     soap_free(pSoap);
     close(msocket_srv);
+    pthread_mutex_destroy(&mutex);
+    
     return 1;
 }
 
@@ -413,6 +422,7 @@ void RecvThread(void* data)
             DBG("start recv msg .. \n");
             if(msgrcv(msqid, &recvmsg, 4, 0, 0) > 0)
             {
+                pthread_mutex_lock(&mutex);
                 initMyIpString();
                 pAddress = getMyIpString(INTERFACE_NAME_1);
                 pAddressWifi = getMyIpString(INTERFACE_NAME_2);
@@ -467,6 +477,7 @@ void RecvThread(void* data)
                 close(msocket_cli2);
                 free(pAddress);
                 free(pAddressWifi);
+                pthread_mutex_unlock(&mutex);
                 usleep(500000);
             }
             usleep(500000);
