@@ -12,9 +12,11 @@ WS-Discovery implementation for ONVIF device
 
 4. Execute method <br \>
    Server side <br \>
-      ./wsdiscovery<br \>
+      ./ws-server<br \>
    Client: <br \>
       ./ws-client 2  <br \>
+
+5. a demo program for iOS is also provided.
 
 http://albert-oma.blogspot.tw/2013/09/onvif-ws-discovery-implementation.html<br \>
 http://albert-oma.blogspot.tw/2013/09/onvif-ws-discovery-spec.html (A Introduction in Chinese)<br \>
