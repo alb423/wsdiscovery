@@ -28,6 +28,7 @@
 #include "util.h"
 #include "mySoapStub.h"
 #include "porting.h"
+#include "MyUtilities.h"
 
 NSString *CheckNetworkAvailablityAndReConnect = @"check network and reconnect";
 NSString *StartButtonTapped = @"StartButtonTapped";
@@ -113,7 +114,15 @@ static size_t myrecv(struct soap* pSoap, char *pData, size_t vLen)
     }
     
     msocket_srv = CreateMulticastServer(MULTICAST_ADDR, MULTICAST_PORT);
+    
     pSoap = soap_new1(SOAP_IO_UDP);
+
+    // TODO: Disable default gSoap debug log file
+    NSString *pRecvLogPath = [MyUtilities getAbsoluteFilepath:@"recv.log"];
+    NSString *pSentLogPath = [MyUtilities getAbsoluteFilepath:@"send.log"];
+    soap_set_recv_logfile(pSoap, [pRecvLogPath UTF8String]); // append all messages received
+    soap_set_sent_logfile(pSoap, [pSentLogPath UTF8String]); // append all messages sent
+    soap_set_test_logfile(pSoap, NULL);
     
     // send 3 times to avoid packet loss
     for(i=0;i<3;i++)

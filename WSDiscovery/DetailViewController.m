@@ -58,18 +58,23 @@
     [self.detailDescriptionTextView setText:pText];
 }
 
+
+// This is just a simple demo process
 - (IBAction)DetailView_ScanDevice:(id)sender {
     
-    dispatch_async(GLOBAL_QUEUE, ^(void) {
-        int vRet = 0;
-        discoveryAgent = [[WSDiscovery_API alloc] init];
-        vRet = [discoveryAgent InitServer:nil];
-    });
-
+    // Init wsdiscovery server
+    int vRet = 0;
+    discoveryAgent = [[WSDiscovery_API alloc] init];
+    
+    // close the discovery process after 10 seconds
     dispatch_async(GLOBAL_QUEUE, ^(void) {
         sleep(10);
         [discoveryAgent InitClient:@"q" OptionCmd:nil];
-    });
+    });   
+    
+    // start discovery to search device
+    vRet = [discoveryAgent InitServer:nil];
+    
 }
 
 @end

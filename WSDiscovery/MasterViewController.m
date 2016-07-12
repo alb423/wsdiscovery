@@ -170,7 +170,7 @@ extern int server(char *pCmd1);
     else if ([notification.name isEqualToString:WSDiscoveryResponse]) {
         
         WSDiscovery_API *pTmpDiscoveryInfo = (WSDiscovery_API *)notification.object;
-        NSLog(@"%@", pTmpDiscoveryInfo);
+        //NSLog(@"%@", pTmpDiscoveryInfo);
 
         //NSString *pDisplayText = [[NSString alloc]initWithFormat: @"Find %ld devices", (long)vDeviceCounter];
         
