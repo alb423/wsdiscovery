@@ -1,4 +1,10 @@
+OS := $(shell uname)
+ifeq ($(OS),Darwin)
+CC = clang 
+else
 CC = gcc
+endif
+
 STRIP	= strip
 wsdiscovery: main.o soapC.o soapServer.o stdsoap2.o util.o mySoapStub.o porting.o
 	$(CC) soapC.o soapServer.o stdsoap2.o main.o util.o mySoapStub.o porting.o -lpthread -o ws-server

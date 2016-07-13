@@ -388,7 +388,7 @@ int CreateMulticastServer(char *pAddress, int port)
    struct ip_mreq group;
    struct sockaddr_in localSock;
    int i, sd;
-   int reuse = 1;
+   int reuse = 1, loop = 0;
    
    sd = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -410,7 +410,16 @@ int CreateMulticastServer(char *pAddress, int port)
    else
       DBG("Setting SO_REUSEADDR...OK.\n");
 
-   
+
+    if(setsockopt(sd, IPPROTO_IP, IP_MULTICAST_LOOP, (char *)&loop, sizeof(loop)) < 0)
+    {
+        perror("Setting IP_MULTICAST_LOOP error");
+        close(sd);
+        exit(1);
+    }
+    else
+        DBG("Disable loopback...OK.\n");
+    
    memset((char *) &localSock, 0, sizeof(localSock));
    localSock.sin_family = AF_INET;
    localSock.sin_port = htons(port);
